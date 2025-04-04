@@ -11,6 +11,3 @@ const productSchema = new mongoose.Schema({
 }, {timestamp: true});
 
 module.exports = mongoose.model('Product', productSchema);
-
-// Sản phẩm mẫu: Shiina Mahiru - ID 67ef7e469f5cf73728ffbc5a
-// User mẫu: Nguyễn Hoàng Tùng - ID 67ef80fecf140398d274787a

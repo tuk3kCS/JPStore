@@ -4,8 +4,9 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const passport = require("passport");
 const session = require("express-session");
+const bodyParser = require("body-parser");
 require("dotenv").config();
-require("./config/passport"); // Import file Passport.js
+require("./config/passport"); // Import Passport.js
 
 const app = express();
 app.use(express.json());
@@ -21,8 +22,7 @@ const productRoutes = require('./routes/productRoutes');
 app.use('/api/products', productRoutes);
 
 const cartRoutes = require('./routes/cartRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
-
+const paymentRoutes = require("./routes/paymentRoutes");
 app.use('/api/cart', cartRoutes);
 app.use('/api/payment', paymentRoutes);
 
@@ -40,11 +40,13 @@ app.get (
 
 app.get (
     "/auth/google/callback",
-    passport.authenticate("google", { failureRedirect: "/" }),
+    passport.authenticate("google", {failureRedirect: "/"}),
     (req, res) => {
         res.json({message: "Login sucessfully!", user: req.user});
     }
 );
+
+app.use("/api/payment", paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server is running at http://localhost:${PORT}`));
