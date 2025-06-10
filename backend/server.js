@@ -11,6 +11,7 @@ dotenv.config();
 const userRoutes = require('./routes/userRoutes');
 const productRoutes = require('./routes/productRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
+const brandRoutes = require('./routes/brandRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 
@@ -32,6 +33,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/jpstore')
 app.use('/api/users', userRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/brands', brandRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 

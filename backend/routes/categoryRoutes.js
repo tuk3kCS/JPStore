@@ -6,7 +6,7 @@ const auth = require('../middlewares/auth');
 // Get all categories
 router.get('/', async (req, res) => {
     try {
-        const categories = await Category.find({ isActive: true })
+        const categories = await Category.find({})
             .sort('name');
         res.json(categories);
     } catch (error) {
@@ -35,15 +35,27 @@ router.post('/', auth, async (req, res) => {
             return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
         }
 
+        console.log('Creating category with data:', req.body);
+        
+        // Check if category with this name already exists
+        const existingCategory = await Category.findOne({ name: req.body.name.trim() });
+        if (existingCategory) {
+            console.log('Found existing category:', existingCategory.name);
+            return res.status(400).json({ message: 'Category name already exists' });
+        }
+
         const category = new Category({
             name: req.body.name,
             description: req.body.description
         });
 
         const savedCategory = await category.save();
+        console.log('Category created successfully:', savedCategory.name);
         res.status(201).json(savedCategory);
     } catch (error) {
+        console.error('Error creating category:', error);
         if (error.code === 11000) {
+            console.log('Duplicate key error details:', error.keyValue);
             return res.status(400).json({ message: 'Category name already exists' });
         }
         res.status(500).json({ message: 'Error creating category', error: error.message });

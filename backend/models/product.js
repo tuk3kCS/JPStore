@@ -10,10 +10,19 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: [true, 'Product description is required']
     },
-    price: {
+    vndPrice: {
         type: Number,
-        required: [true, 'Product price is required'],
-        min: [0, 'Price cannot be negative']
+        required: function() {
+            return !this.isPreOrder;
+        },
+        min: [0, 'VND price cannot be negative']
+    },
+    jpyPrice: {
+        type: Number,
+        required: function() {
+            return this.isPreOrder;
+        },
+        min: [0, 'JPY price cannot be negative']
     },
     category: {
         type: mongoose.Schema.Types.ObjectId,
@@ -21,9 +30,9 @@ const productSchema = new mongoose.Schema({
         required: [true, 'Product category is required']
     },
     brand: {
-        type: String,
-        required: [true, 'Product brand is required'],
-        trim: true
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Brand',
+        required: [true, 'Product brand is required']
     },
     images: [{
         type: String,
@@ -39,6 +48,10 @@ const productSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
         required: true
+    },
+    releaseDate: {
+        type: Date,
+        default: null
     },
     isActive: {
         type: Boolean,

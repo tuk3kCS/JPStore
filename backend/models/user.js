@@ -11,6 +11,10 @@ const userSchema = new mongoose.Schema({
         unique: true,
         trim: true
     },
+    avatar: {
+        type: String,
+        default: 'https://via.placeholder.com/150'
+    },
     email: {
         type: String,
         required: [true, 'Email is required'],
@@ -31,10 +35,7 @@ const userSchema = new mongoose.Schema({
         default: 'user'
     },
     address: {
-        street: String,
-        ward: String,
-        district: String,
-        city: String
+        type: String
     },
     orderHistory: [{
         type: mongoose.Schema.Types.ObjectId,

@@ -1,25 +1,67 @@
-# Free eCommerce Template for Next.js - NextMerce
+# JPStore Frontend
 
-The free Next.js eCommerce template is a lite version of the NextMerce Next.js eCommerce boilerplate, designed to streamline the launch and management of your online store.
+React.js frontend for the JPStore e-commerce application.
 
-![NextMerce](https://github.com/user-attachments/assets/57155689-a756-4222-8af7-134e556acae2)
+## Getting Started
 
+### Prerequisites
 
-While NextMerce Pro features advanced functionalities, seamless integration, and customizable options, providing all the essential tools needed to build and expand your business, the lite version offers a basic Next.js template specifically crafted for eCommerce websites. Both versions ensure superior performance and flexibility, all powered by Next.js.
+- Node.js (v14 or higher)
+- npm or yarn
 
-### NextMerce Free VS NextMerce Pro
+### Installation
 
-| ✨ Features                         | 🎁 NextMerce Free                 | 🔥 NextMerce Pro                        |
-|----------------------------------|--------------------------------|--------------------------------------|
-| Next.js Pages                    | Static                         | Dynamic Boilerplate Template         |
-| Components                       | Limited                        | All According to Demo                |
-| eCommerce Functionality          | Included                       | Included                             |
-| Integrations (DB, Auth, etc.)    | Not Included                   | Included                             |
-| Community Support                | Included                       | Included                             |
-| Premium Email Support            | Not Included                   | Included                             |
-| Lifetime Free Updates            | Included                       | Included                             |
+1. Navigate to the frontend directory:
+```bash
+cd frontend
+```
 
+2. Install dependencies:
+```bash
+npm install
+```
 
-#### [🚀 Live Demo](https://demo.nextmerce.com/)
+3. Create environment file:
+```bash
+cp env.template .env
+```
 
-#### [🌐 Visit Website](https://nextmerce.com/)
+4. Update the environment variables in `.env` if needed.
+
+### Running the Application
+
+```bash
+npm start
+```
+
+The application will open in your browser at `http://localhost:3000`.
+
+### Available Scripts
+
+- `npm start` - Runs the app in development mode
+- `npm build` - Builds the app for production
+- `npm test` - Launches the test runner
+- `npm run eject` - Ejects from Create React App (one-way operation)
+
+### Project Structure
+
+```
+src/
+├── components/          # React components
+│   ├── auth/           # Authentication components
+│   ├── common/         # Reusable components
+│   └── layout/         # Layout components
+├── context/            # React Context providers
+├── services/           # API service functions
+├── utils/              # Utility functions
+├── App.js              # Main App component
+└── index.js            # Entry point
+```
+
+### API Integration
+
+The frontend communicates with the backend API running on `http://localhost:5000/api` by default. Make sure the backend server is running before starting the frontend.
+
+### Authentication
+
+The app uses JWT tokens for authentication. Tokens are stored in localStorage and automatically included in API requests. 

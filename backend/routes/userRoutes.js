@@ -4,6 +4,9 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const auth = require('../middlewares/auth');
+const { uploadUserAvatar } = require('../middlewares/upload');
+const path = require('path');
+const fs = require('fs');
 
 // Register a new user
 router.post('/register', async (req, res) => {
@@ -64,10 +67,10 @@ router.post('/register', async (req, res) => {
 // Login user
 router.post('/login', async (req, res) => {
     try {
-        const { email, password } = req.body;
+        const { username, password } = req.body;
 
         // Check if user exists
-        const user = await User.findOne({ email });
+        const user = await User.findOne({ username });
         if (!user) {
             return res.status(400).json({ message: 'User not found' });
         }
@@ -150,6 +153,99 @@ router.put('/change-password', auth, async (req, res) => {
     }
 });
 
+// Upload avatar image
+router.post('/upload-avatar', auth, uploadUserAvatar.single('avatar'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        // Construct the image URL
+        const imageUrl = `/images/user/${req.file.filename}`;
+        
+        // Update user's avatar
+        const user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Delete old avatar file if it exists
+        if (user.avatar && user.avatar.startsWith('/images/user/')) {
+            const oldFilePath = path.join(__dirname, '../public', user.avatar);
+            if (fs.existsSync(oldFilePath)) {
+                fs.unlinkSync(oldFilePath);
+            }
+        }
+
+        user.avatar = imageUrl;
+        await user.save();
+
+        res.json({
+            message: 'Avatar uploaded successfully',
+            avatar: imageUrl
+        });
+    } catch (error) {
+        // Delete uploaded file if there was an error
+        if (req.file) {
+            const filePath = path.join(__dirname, '../public/images/user', req.file.filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+        res.status(500).json({ message: 'Error uploading avatar', error: error.message });
+    }
+});
+
+// Upload avatar for specific user (admin only)
+router.post('/:id/upload-avatar', auth, uploadUserAvatar.single('avatar'), async (req, res) => {
+    try {
+        // Check if user is admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({ message: 'No file uploaded' });
+        }
+
+        // Construct the image URL
+        const imageUrl = `/images/user/${req.file.filename}`;
+        
+        // Update user's avatar
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Delete old avatar file if it exists
+        if (user.avatar && user.avatar.startsWith('/images/user/')) {
+            const oldFilePath = path.join(__dirname, '../public', user.avatar);
+            if (fs.existsSync(oldFilePath)) {
+                fs.unlinkSync(oldFilePath);
+            }
+        }
+
+        user.avatar = imageUrl;
+        await user.save();
+
+        // Return user without password
+        const updatedUser = await User.findById(req.params.id).select('-password');
+        res.json({
+            message: 'Avatar uploaded successfully',
+            user: updatedUser
+        });
+    } catch (error) {
+        // Delete uploaded file if there was an error
+        if (req.file) {
+            const filePath = path.join(__dirname, '../public/images/user', req.file.filename);
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+        }
+        res.status(500).json({ message: 'Error uploading avatar', error: error.message });
+    }
+});
+
 // Get all users (admin only)
 router.get('/', auth, async (req, res) => {
     try {
@@ -165,31 +261,107 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
-// Get current user profile
-router.get('/me', auth, async (req, res) => {
+// Get user by ID (admin only)
+router.get('/:id', auth, async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password');
+        // Check if user is admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+        }
+
+        const user = await User.findById(req.params.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
         res.json(user);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Error fetching user', error: error.message });
     }
 });
 
-// Update user profile
-router.put('/me', auth, async (req, res) => {
+// Update user by ID (admin only)
+router.put('/:id', auth, async (req, res) => {
     try {
-        const { name, email, phone, address } = req.body;
-        const user = await User.findById(req.user.id);
+        // Check if user is admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+        }
 
-        if (name) user.name = name;
-        if (email) user.email = email;
-        if (phone) user.phone = phone;
-        if (address) user.address = address;
+        const { name, email, phone, address, avatar } = req.body;
+        const user = await User.findById(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Update user fields
+        if (name !== undefined) user.name = name;
+        if (email !== undefined) user.email = email;
+        if (phone !== undefined) user.phone = phone;
+        if (address !== undefined) user.address = address;
+        if (avatar !== undefined) user.avatar = avatar;
 
         await user.save();
-        res.json(user);
+        
+        // Return user without password
+        const updatedUser = await User.findById(req.params.id).select('-password');
+        res.json(updatedUser);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        res.status(500).json({ message: 'Error updating user', error: error.message });
+    }
+});
+
+// Create new user (admin only)
+router.post('/', auth, async (req, res) => {
+    try {
+        // Check if user is admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+        }
+
+        const { username, email, password, name, phone, address, avatar } = req.body;
+
+        // Validate required fields
+        if (!username || !email || !password) {
+            return res.status(400).json({ message: 'Username, email, and password are required' });
+        }
+
+        // Check if user already exists (by email or username)
+        let existingUser = await User.findOne({ 
+            $or: [
+                { email },
+                { username }
+            ]
+        });
+        
+        if (existingUser) {
+            if (existingUser.email === email) {
+                return res.status(400).json({ message: 'Email already exists' });
+            }
+            if (existingUser.username === username) {
+                return res.status(400).json({ message: 'Username already exists' });
+            }
+        }
+
+        // Create new user with plain password (will be hashed by pre-save hook)
+        const user = new User({
+            username,
+            email,
+            password, // Send plain password, pre-save hook will hash it
+            name,
+            phone,
+            address,
+            avatar
+        });
+
+        await user.save();
+
+        // Return user without password
+        const newUser = await User.findById(user._id).select('-password');
+        res.status(201).json(newUser);
+    } catch (error) {
+        res.status(500).json({ message: 'Error creating user', error: error.message });
     }
 });
 
