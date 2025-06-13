@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { setAuthToken, setUser } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     password: '',
@@ -38,33 +39,28 @@ const LoginPage = () => {
       const { username, password } = formData;
       
       if (!username.trim()) {
-        setErrors({ username: 'Username is required' });
+        setErrors({ username: 'Tên người dùng là bắt buộc' });
         setIsLoading(false);
         return;
       }
       
       if (!password) {
-        setErrors({ password: 'Password is required' });
+        setErrors({ password: 'Mật khẩu là bắt buộc' });
         setIsLoading(false);
         return;
       }
 
       const response = await authService.login({ username, password });
       
-      // Store auth data
-      setAuthToken(response.token);
-      setUser(response.user);
+      // Use AuthContext's login method to update React state
+      login(response.user, response.token);
       
-      // Redirect based on user role
-      if (response.user.role === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
+      // Redirect to home page
+      navigate('/');
     } catch (error) {
       console.error('Login error:', error);
       setErrors({ 
-        general: error.response?.data?.message || 'Login failed. Please try again.' 
+        general: error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.' 
       });
     } finally {
       setIsLoading(false);
@@ -95,7 +91,7 @@ const LoginPage = () => {
 
         {/* Title */}
         <h2 className="text-center text-2xl font-semibold text-gray-900 mb-8">
-          Sign In to Your Account
+          Đăng nhập vào tài khoản của bạn
         </h2>
       </div>
 
@@ -122,7 +118,7 @@ const LoginPage = () => {
                   required
                   value={formData.username}
                   onChange={handleChange}
-                  placeholder="Username"
+                  placeholder="Tên người dùng"
                   className={`block w-full pl-10 pr-3 py-3 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                     errors.username ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -146,7 +142,7 @@ const LoginPage = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Password"
+                  placeholder="Mật khẩu"
                   className={`block w-full pl-10 pr-3 py-3 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -169,13 +165,13 @@ const LoginPage = () => {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
-                  Remember me
+                  Ghi nhớ đăng nhập
                 </label>
               </div>
 
               <div className="text-sm">
                 <Link to="/forgot-password" className="text-blue-600 hover:text-blue-500">
-                  Forgot password?
+                  Quên mật khẩu?
                 </Link>
               </div>
             </div>
@@ -193,19 +189,19 @@ const LoginPage = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Signing In...
+                    Đang đăng nhập...
                   </>
                 ) : (
-                  'Login'
+                  'Đăng nhập'
                 )}
               </button>
             </div>
 
             {/* Register Link */}
             <div className="text-center text-sm">
-              <span className="text-gray-600">Don't have an account? </span>
+              <span className="text-gray-600">Chưa có tài khoản? </span>
               <Link to="/register" className="text-blue-600 hover:text-blue-500">
-                Register now
+                Đăng ký ngay
               </Link>
             </div>
           </form>

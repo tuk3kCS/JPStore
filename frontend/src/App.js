@@ -10,12 +10,15 @@ import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
 import MyAccountPage from './pages/MyAccountPage';
 import MyOrdersPage from './pages/MyOrdersPage';
+import OrderSuccessPage from './pages/OrderSuccessPage';
+import OrderCancelledPage from './pages/OrderCancelledPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import ProductManagementPage from './pages/ProductManagementPage';
 import OrderManagementPage from './pages/OrderManagementPage';
+import NotFoundPage from './pages/NotFoundPage';
 import './App.css';
 
 function App() {
@@ -36,6 +39,8 @@ function App() {
               <Route path="/product/:id" element={<ProductDetailPage />} />
               <Route path="/cart" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/order-success" element={<OrderSuccessPage />} />
+              <Route path="/order-cancelled" element={<OrderCancelledPage />} />
               <Route path="/account" element={
                 <ProtectedRoute>
                   <MyAccountPage />
@@ -66,6 +71,8 @@ function App() {
                   <OrderManagementPage />
                 </ProtectedRoute>
               } />
+              {/* 404 Page - Must be the last route */}
+              <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </div>
         </Router>

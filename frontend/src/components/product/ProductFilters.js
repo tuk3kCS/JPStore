@@ -73,19 +73,19 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <i className="bi bi-funnel text-blue-600 mr-2"></i>
-          <h3 className="font-semibold text-gray-800">Filters</h3>
+          <h3 className="font-semibold text-gray-800">Bộ lọc</h3>
         </div>
         <button 
           onClick={onClearFilters}
           className="text-sm text-blue-600 hover:text-blue-700"
         >
-          Clear all filters
+          Xóa bộ lọc
         </button>
       </div>
 
       {/* Product Type Filter */}
       <div className="mb-6">
-        <h4 className="font-medium text-gray-800 mb-3">Product Type</h4>
+        <h4 className="font-medium text-gray-800 mb-3">Phân loại sản phẩm</h4>
         <div className="space-y-2">
           <label className="flex items-center cursor-pointer">
             <input
@@ -96,7 +96,7 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
               onChange={(e) => handleProductTypeChange(e.target.value)}
               className="text-blue-600 focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm text-gray-700">All Products</span>
+            <span className="ml-2 text-sm text-gray-700">Tất cả sản phẩm</span>
           </label>
           <label className="flex items-center cursor-pointer">
             <input
@@ -107,7 +107,7 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
               onChange={(e) => handleProductTypeChange(e.target.value)}
               className="text-blue-600 focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm text-gray-700">Regular Products</span>
+            <span className="ml-2 text-sm text-gray-700">Hàng có sẵn</span>
           </label>
           <label className="flex items-center cursor-pointer">
             <input
@@ -118,17 +118,17 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
               onChange={(e) => handleProductTypeChange(e.target.value)}
               className="text-blue-600 focus:ring-blue-500"
             />
-            <span className="ml-2 text-sm text-gray-700">Pre-order Products</span>
+            <span className="ml-2 text-sm text-gray-700">Hàng đặt trước</span>
           </label>
         </div>
       </div>
 
       {/* Price Range */}
       <div className="mb-6">
-        <h4 className="font-medium text-gray-800 mb-3">Price Range</h4>
+        <h4 className="font-medium text-gray-800 mb-3">Khoảng giá</h4>
         <div className="space-y-3">
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Min Price</label>
+            <label className="block text-sm text-gray-600 mb-1">Giá tối thiểu</label>
             <input
               type="number"
               value={filters.priceRange.min}
@@ -138,7 +138,7 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-600 mb-1">Max Price</label>
+            <label className="block text-sm text-gray-600 mb-1">Giá tối đa</label>
             <input
               type="number"
               value={filters.priceRange.max}
@@ -152,7 +152,7 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
 
       {/* Categories */}
       <div className="mb-6">
-        <h4 className="font-medium text-gray-800 mb-3">Categories</h4>
+        <h4 className="font-medium text-gray-800 mb-3">Danh mục</h4>
         {loading ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, index) => (
@@ -175,7 +175,7 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
               </label>
             ))}
             {categories.length === 0 && (
-              <p className="text-sm text-gray-500">No categories available</p>
+              <p className="text-sm text-gray-500">Không có danh mục nào</p>
             )}
           </div>
         )}
@@ -183,7 +183,7 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
 
       {/* Brands */}
       <div>
-        <h4 className="font-medium text-gray-800 mb-3">Brands</h4>
+        <h4 className="font-medium text-gray-800 mb-3">Nhà phát hành</h4>
         {loading ? (
           <div className="space-y-2">
             {[...Array(5)].map((_, index) => (
@@ -206,7 +206,7 @@ const ProductFilters = ({ filters, onFilterChange, onClearFilters, maxPrice = 10
               </label>
             ))}
             {brands.length === 0 && (
-              <p className="text-sm text-gray-500">No brands available</p>
+              <p className="text-sm text-gray-500">Không có nhà phát hành nào</p>
             )}
           </div>
         )}

@@ -11,48 +11,29 @@ const AdminHeader = ({ title }) => {
     }
   }, []);
 
-  // Get user's initials for avatar
-  const getInitials = (name) => {
-    if (!name) return 'A';
-    return name.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2);
-  };
-
   const displayName = user?.name || user?.username || 'Admin';
 
   return (
     <header className="bg-white shadow-sm border-b px-6 py-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">{title}</h1>
+      <div className="flex items-center justify-between h-8">
+        <div className="flex items-center">
+          <h1 className="text-xl font-bold text-gray-900">{title}</h1>
         </div>
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <button className="flex items-center space-x-2 text-gray-600 hover:text-gray-900">
-              <div className="w-8 h-8 rounded-full overflow-hidden border border-gray-200">
-                {user?.avatar && !user.avatar.includes('placeholder') && user.avatar !== 'https://via.placeholder.com/150' ? (
-                  <img
-                    src={user.avatar.startsWith('/') ? `http://localhost:5000${user.avatar}` : user.avatar}
+        <div className="flex items-center space-x-3">
+          <img
+            src={user?.avatar && !user.avatar.includes('placeholder') && user.avatar !== 'https://via.placeholder.com/150' 
+              ? (user.avatar.startsWith('/') ? `http://localhost:5000${user.avatar}` : user.avatar)
+              : `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1`
+            }
                     alt={displayName}
-                    className="w-full h-full object-cover"
+            className="w-8 h-8 rounded-full object-cover border-2 border-gray-200"
                     onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.nextSibling.style.display = 'flex';
-                    }}
-                  />
-                ) : (
-                  <div className="w-full h-full bg-blue-500 flex items-center justify-center">
-                    <span className="text-sm font-medium text-white">{getInitials(displayName)}</span>
-                  </div>
-                )}
-                {user?.avatar && !user.avatar.includes('placeholder') && user.avatar !== 'https://via.placeholder.com/150' && (
-                  <div className="w-full h-full bg-blue-500 flex items-center justify-center" style={{display: 'none'}}>
-                    <span className="text-sm font-medium text-white">{getInitials(displayName)}</span>
-                  </div>
-                )}
-              </div>
-              <span className="text-sm font-medium">{displayName}</span>
-              <i className="bi bi-chevron-down text-xs"></i>
-            </button>
+              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=6366f1`;
+            }}
+          />
+          <div className="text-left">
+            <p className="text-sm font-medium text-gray-900">{displayName}</p>
+            <p className="text-xs text-gray-500">Quản trị viên</p>
           </div>
         </div>
       </div>

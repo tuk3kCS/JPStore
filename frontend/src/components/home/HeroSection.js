@@ -1,19 +1,29 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
+  const handleBuyNowClick = () => {
+    navigate('/product');
+  };
+
   return (
     <section className="relative bg-gradient-to-r from-blue-400 via-blue-500 to-blue-600 text-white py-24">
       <div className="absolute inset-0 bg-black opacity-10"></div>
       <div className="relative container pl-4">
         <div className="max-w-2xl text-left">
           <h1 className="text-5xl font-bold mb-4 text-left">
-            New Figure Collection
+            Bộ sưu tập mô hình mới
           </h1>
           <p className="text-xl mb-8 text-blue-100 text-left">
-            Discover our latest exclusive releases
+            Khám phá những sản phẩm độc quyền mới nhất của chúng tôi
           </p>
-          <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg">
-            Shop Now
+          <button 
+            onClick={handleBuyNowClick}
+            className="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors shadow-lg"
+          >
+            Mua ngay
           </button>
         </div>
       </div>

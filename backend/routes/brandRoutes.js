@@ -10,7 +10,7 @@ router.get('/', async (req, res) => {
             .sort('name');
         res.json(brands);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching brands', error: error.message });
+        res.status(500).json({ message: 'Lỗi lấy danh sách nhà phát hành', error: error.message });
     }
 });
 
@@ -19,11 +19,11 @@ router.get('/:id', async (req, res) => {
     try {
         const brand = await Brand.findById(req.params.id);
         if (!brand) {
-            return res.status(404).json({ message: 'Brand not found' });
+            return res.status(404).json({ message: 'Nhà phát hành không tồn tại' });
         }
         res.json(brand);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching brand', error: error.message });
+        res.status(500).json({ message: 'Lỗi lấy thông tin nhà phát hành', error: error.message });
     }
 });
 
@@ -32,7 +32,7 @@ router.post('/', auth, async (req, res) => {
     try {
         // Check if user is admin
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+            return res.status(403).json({ message: 'Quyền truy cập bị từ chối. Quyền quản trị viên được yêu cầu.' });
         }
 
         const brand = new Brand({
@@ -44,9 +44,9 @@ router.post('/', auth, async (req, res) => {
         res.status(201).json(savedBrand);
     } catch (error) {
         if (error.code === 11000) {
-            return res.status(400).json({ message: 'Brand name already exists' });
+            return res.status(400).json({ message: 'Tên nhà phát hành đã tồn tại' });
         }
-        res.status(500).json({ message: 'Error creating brand', error: error.message });
+        res.status(500).json({ message: 'Lỗi tạo nhà phát hành', error: error.message });
     }
 });
 
@@ -55,12 +55,12 @@ router.put('/:id', auth, async (req, res) => {
     try {
         // Check if user is admin
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+            return res.status(403).json({ message: 'Quyền truy cập bị từ chối. Quyền quản trị viên được yêu cầu.' });
         }
 
         const brand = await Brand.findById(req.params.id);
         if (!brand) {
-            return res.status(404).json({ message: 'Brand not found' });
+            return res.status(404).json({ message: 'Nhà phát hành không tồn tại' });
         }
 
         // Update brand fields
@@ -72,9 +72,9 @@ router.put('/:id', auth, async (req, res) => {
         res.json(updatedBrand);
     } catch (error) {
         if (error.code === 11000) {
-            return res.status(400).json({ message: 'Brand name already exists' });
+            return res.status(400).json({ message: 'Tên nhà phát hành đã tồn tại' });
         }
-        res.status(500).json({ message: 'Error updating brand', error: error.message });
+        res.status(500).json({ message: 'Lỗi cập nhật nhà phát hành', error: error.message });
     }
 });
 
@@ -83,18 +83,18 @@ router.delete('/:id', auth, async (req, res) => {
     try {
         // Check if user is admin
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+            return res.status(403).json({ message: 'Quyền truy cập bị từ chối. Quyền quản trị viên được yêu cầu.' });
         }
 
         const brand = await Brand.findById(req.params.id);
         if (!brand) {
-            return res.status(404).json({ message: 'Brand not found' });
+            return res.status(404).json({ message: 'Nhà phát hành không tồn tại' });
         }
 
         await Brand.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Brand deleted successfully' });
+        res.json({ message: 'Nhà phát hành đã được xóa thành công' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting brand', error: error.message });
+        res.status(500).json({ message: 'Lỗi xóa nhà phát hành', error: error.message });
     }
 });
 

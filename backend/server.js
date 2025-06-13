@@ -14,6 +14,8 @@ const categoryRoutes = require('./routes/categoryRoutes');
 const brandRoutes = require('./routes/brandRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
+const exchangeRateRoutes = require('./routes/exchangeRateRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 // Create Express app
 const app = express();
@@ -36,6 +38,8 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/brands', brandRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/exchange-rate', exchangeRateRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

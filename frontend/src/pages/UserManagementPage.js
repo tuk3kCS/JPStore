@@ -308,7 +308,7 @@ const UserManagementPage = () => {
       <div className="w-64 bg-white shadow-sm border-r">
         {/* Logo */}
         <div className="px-6 py-6 border-b">
-          <div className="flex items-center">
+          <div className="flex items-center h-8">
             <img 
               src="/images/logo.png" 
               alt="JPStore Logo" 
@@ -336,7 +336,7 @@ const UserManagementPage = () => {
                 className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
               >
                 <i className="bi bi-grid mr-3"></i>
-                Overview
+                Tổng quan
               </Link>
             </li>
             <li>
@@ -345,7 +345,7 @@ const UserManagementPage = () => {
                 className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors bg-blue-50 text-blue-600 border-r-2 border-blue-600"
               >
                 <i className="bi bi-people mr-3"></i>
-                User Management
+                Quản lý người dùng
               </button>
             </li>
             <li>
@@ -354,7 +354,7 @@ const UserManagementPage = () => {
                 className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
               >
                 <i className="bi bi-box mr-3"></i>
-                Product Management
+                Quản lý sản phẩm
               </Link>
             </li>
             <li>
@@ -363,18 +363,10 @@ const UserManagementPage = () => {
                 className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
               >
                 <i className="bi bi-clipboard-data mr-3"></i>
-                Order Management
+                Quản lý đơn hàng
               </Link>
             </li>
-            <li>
-              <button
-                onClick={() => setActiveMenuItem('statistics')}
-                className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
-              >
-                <i className="bi bi-bar-chart mr-3"></i>
-                Statistics
-              </button>
-            </li>
+
           </ul>
           
           {/* Logout Button */}
@@ -384,7 +376,7 @@ const UserManagementPage = () => {
               className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               <i className="bi bi-box-arrow-right mr-3"></i>
-              Logout
+              Đăng xuất
             </button>
           </div>
         </nav>
@@ -393,7 +385,7 @@ const UserManagementPage = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <AdminHeader title="User Management" />
+        <AdminHeader title="Quản lý người dùng" />
 
         {/* Dashboard Content */}
         <main className="flex-1 overflow-auto p-6">
@@ -421,7 +413,7 @@ const UserManagementPage = () => {
                 <i className="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                 <input
                   type="text"
-                  placeholder="Search users by name, email, username, or ID..."
+                  placeholder="Tìm kiếm người dùng theo tên, email, tên người dùng hoặc ID..."
                   value={searchTerm}
                   onChange={handleSearchChange}
                   className="w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -435,7 +427,7 @@ const UserManagementPage = () => {
               className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               <i className="bi bi-plus"></i>
-              <span>Add New User</span>
+              <span>Thêm người dùng mới</span>
             </button>
           </div>
 
@@ -444,13 +436,13 @@ const UserManagementPage = () => {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User ID</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID người dùng</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Họ và tên</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên người dùng</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Vai trò</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày tạo</th>
+                  <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -495,7 +487,7 @@ const UserManagementPage = () => {
                             {console.log('User ID:', user._id, 'Current User ID:', currentUser?.id, 'Current User _id:', currentUser?._id, 'Match with id:', user._id === currentUser?.id, 'Match with _id:', user._id === currentUser?._id)}
                             {(user._id === currentUser?.id || user._id === currentUser?._id) && (
                               <span className="inline-flex px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full">
-                                You
+                                Bạn
                               </span>
                             )}
                           </div>
@@ -533,10 +525,10 @@ const UserManagementPage = () => {
                               }
                             }}
                             disabled={user._id === currentUser?.id || user._id === currentUser?._id}
-                            title={(user._id === currentUser?.id || user._id === currentUser?._id) ? "You cannot demote yourself" : "Demote to User"}
+                            title={(user._id === currentUser?.id || user._id === currentUser?._id) ? "Bạn không thể hạ cấp chính mình" : "Hạ cấp xuống người dùng"}
                           >
                             <i className="bi bi-arrow-down text-xs mr-1"></i>
-                            <span className="text-xs">Demote</span>
+                            <span className="text-xs">Hạ cấp</span>
                           </button>
                         ) : (
                           <button 
@@ -552,10 +544,10 @@ const UserManagementPage = () => {
                               }
                             }}
                             disabled={user._id === currentUser?.id || user._id === currentUser?._id}
-                            title={(user._id === currentUser?.id || user._id === currentUser?._id) ? "You cannot promote yourself" : "Promote to Admin"}
+                            title={(user._id === currentUser?.id || user._id === currentUser?._id) ? "Bạn không thể nâng cấp chính mình" : "Nâng cấp thành quản trị viên"}
                           >
                             <i className="bi bi-arrow-up text-xs mr-1"></i>
-                            <span className="text-xs">Promote</span>
+                            <span className="text-xs">Nâng cấp</span>
                           </button>
                         )}
                         
@@ -573,10 +565,10 @@ const UserManagementPage = () => {
                             }
                           }}
                           disabled={user._id === currentUser?.id || user._id === currentUser?._id}
-                          title={(user._id === currentUser?.id || user._id === currentUser?._id) ? "You cannot delete your own account" : "Delete User"}
+                          title={(user._id === currentUser?.id || user._id === currentUser?._id) ? "Bạn không thể xóa tài khoản của mình" : "Xóa người dùng"}
                         >
                           <i className="bi bi-trash text-xs mr-1"></i>
-                          <span className="text-xs">Delete</span>
+                          <span className="text-xs">Xóa</span>
                         </button>
                       </div>
                     </td>
@@ -665,7 +657,7 @@ const UserManagementPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {isAddMode ? 'Add New User' : 'Edit User'}
+                {isAddMode ? 'Thêm người dùng mới' : 'Chỉnh sửa người dùng'}
               </h2>
               <button
                 onClick={handleModalClose}
@@ -679,39 +671,54 @@ const UserManagementPage = () => {
               {/* User Avatar Upload */}
               <div className="text-center mb-6">
                 <div className="relative inline-block">
+                  {/* Clickable Avatar Container */}
+                  <div 
+                    className="relative cursor-pointer group"
+                    onClick={() => !uploading && document.getElementById('avatar-upload').click()}
+                    title="Click to upload avatar"
+                  >
+                    {/* Avatar Display */}
                   {avatarPreview || (formData.avatar && !formData.avatar.includes('placeholder') && formData.avatar !== 'https://via.placeholder.com/150') ? (
                     <img
                       src={avatarPreview || (formData.avatar?.startsWith('/') ? `http://localhost:5000${formData.avatar}` : formData.avatar)}
                       alt="User Avatar"
-                      className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
+                        className="w-20 h-20 rounded-full object-cover border-2 border-gray-200 group-hover:opacity-75 transition-opacity"
                     />
                   ) : (
-                    <div className="w-20 h-20 rounded-full bg-blue-100 border-2 border-gray-200 flex items-center justify-center">
+                      <div className="w-20 h-20 rounded-full bg-blue-100 border-2 border-gray-200 flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                       <span className="text-xl font-semibold text-blue-600">
                         {getUserInitials(formData.name, formData.username)}
                       </span>
                     </div>
                   )}
+                    
+                    {/* Upload Overlay - shows on hover */}
+                    <div className="absolute inset-0 rounded-full bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all duration-200 flex items-center justify-center">
+                      <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-white">
+                        {uploading ? (
+                          <i className="bi bi-arrow-clockwise animate-spin text-lg"></i>
+                        ) : (
+                          <i className="bi bi-camera text-lg"></i>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  
                   {/* Remove button - top right */}
                   {(selectedFile || (formData.avatar && !formData.avatar.includes('placeholder') && formData.avatar !== 'https://via.placeholder.com/150')) && (
                     <button
                       type="button"
-                      onClick={handleRemoveAvatar}
-                      className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 border-2 border-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRemoveAvatar();
+                      }}
+                      className="absolute -top-1 -right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-700 border-2 border-white transition-colors z-10"
                       title="Remove Image"
+                      disabled={uploading}
                     >
                       <i className="bi bi-x text-xs"></i>
                     </button>
                   )}
-                  {/* Camera button - bottom right */}
-                  <button
-                    type="button"
-                    onClick={() => document.getElementById('avatar-upload').click()}
-                    className="absolute bottom-0 right-0 bg-blue-600 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-blue-700 border-2 border-white"
-                    title="Upload Image"
-                  >
-                    <i className="bi bi-camera text-xs"></i>
-                  </button>
                 </div>
                 <input
                   id="avatar-upload"
@@ -721,14 +728,14 @@ const UserManagementPage = () => {
                   className="hidden"
                 />
                 <p className="text-xs text-gray-500 mt-2">
-                  Click camera to upload image (max 5MB)
+                  Nhấp vào ảnh đại diện để tải lên hình ảnh (tối đa 5MB)
                 </p>
               </div>
 
               {/* Full Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Full Name
+                  Họ và tên
                 </label>
                 <div className="relative">
                   <i className="bi bi-person-fill absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
@@ -738,7 +745,7 @@ const UserManagementPage = () => {
                     value={formData.name}
                     onChange={handleFormChange}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter full name"
+                    placeholder="Nhập họ và tên"
                   />
                 </div>
               </div>
@@ -746,7 +753,7 @@ const UserManagementPage = () => {
               {/* Username */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Username
+                  Tên người dùng
                 </label>
                 <div className="relative">
                   <i className="bi bi-person absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
@@ -756,7 +763,7 @@ const UserManagementPage = () => {
                     value={formData.username}
                     onChange={handleFormChange}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter username"
+                    placeholder="Nhập tên người dùng"
                   />
                 </div>
               </div>
@@ -774,7 +781,7 @@ const UserManagementPage = () => {
                     value={formData.email}
                     onChange={handleFormChange}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter email"
+                    placeholder="Nhập email"
                   />
                 </div>
               </div>
@@ -782,7 +789,7 @@ const UserManagementPage = () => {
               {/* Password */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Password
+                  Mật khẩu
                 </label>
                 <div className="relative">
                   <i className="bi bi-lock absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
@@ -792,7 +799,7 @@ const UserManagementPage = () => {
                     value={formData.password}
                     onChange={handleFormChange}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder={isAddMode ? "Enter password" : "Enter new password"}
+                    placeholder={isAddMode ? "Nhập mật khẩu" : "Nhập mật khẩu mới"}
                   />
                 </div>
               </div>
@@ -800,7 +807,7 @@ const UserManagementPage = () => {
               {/* Phone Number */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Phone Number
+                  Số điện thoại
                 </label>
                 <div className="relative">
                   <i className="bi bi-telephone absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
@@ -810,7 +817,7 @@ const UserManagementPage = () => {
                     value={formData.phone}
                     onChange={handleFormChange}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter phone number"
+                    placeholder="Nhập số điện thoại"
                   />
                 </div>
               </div>
@@ -818,7 +825,7 @@ const UserManagementPage = () => {
               {/* Address */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Address
+                  Địa chỉ
                 </label>
                 <div className="relative">
                   <i className="bi bi-geo-alt absolute left-3 top-3 text-gray-400"></i>
@@ -828,7 +835,7 @@ const UserManagementPage = () => {
                     onChange={handleFormChange}
                     rows={3}
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter address"
+                    placeholder="Nhập địa chỉ"
                   />
                 </div>
               </div>
@@ -841,7 +848,7 @@ const UserManagementPage = () => {
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                   disabled={uploading}
                 >
-                  Cancel
+                  Hủy
                 </button>
                 <button
                   type="button"
@@ -852,10 +859,10 @@ const UserManagementPage = () => {
                   {uploading ? (
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {isAddMode ? 'Creating...' : 'Saving...'}
+                      {isAddMode ? 'Đang tạo...' : 'Đang lưu...'}
                     </div>
                   ) : (
-                    isAddMode ? 'Add User' : 'Save Changes'
+                    isAddMode ? 'Thêm người dùng' : 'Lưu thay đổi'
                   )}
                 </button>
               </div>
@@ -870,7 +877,7 @@ const UserManagementPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Confirm Delete
+                Xác nhận xóa
               </h2>
               <button
                 onClick={() => setDeleteConfirmUser(null)}
@@ -886,20 +893,20 @@ const UserManagementPage = () => {
                   <i className="bi bi-exclamation-triangle text-red-600 text-xl"></i>
                 </div>
                 <div className="text-left">
-                  <h3 className="text-lg font-medium text-gray-900">Delete User</h3>
-                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                  <h3 className="text-lg font-medium text-gray-900">Xóa người dùng</h3>
+                  <p className="text-sm text-gray-500">Hành động này không thể hoàn tác</p>
                 </div>
               </div>
               
               <p className="text-gray-700 mb-4 text-left">
-                Are you sure you want to delete user <strong>{deleteConfirmUser.name || deleteConfirmUser.username}</strong>? 
-                This will permanently remove the user account and all associated data.
+                Bạn có chắc chắn muốn xóa người dùng <strong>{deleteConfirmUser.name || deleteConfirmUser.username}</strong>? 
+                Điều này sẽ xóa vĩnh viễn tài khoản người dùng và tất cả dữ liệu liên quan.
               </p>
 
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <div className="flex items-center">
                   <i className="bi bi-info-circle text-red-500 mr-2 flex-shrink-0"></i>
-                  <span className="text-sm text-red-700 text-left">This action is irreversible</span>
+                  <span className="text-sm text-red-700 text-left">Hành động này không thể hoàn tác</span>
                 </div>
               </div>
             </div>
@@ -910,14 +917,14 @@ const UserManagementPage = () => {
                 onClick={() => setDeleteConfirmUser(null)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
-                Cancel
+                Hủy
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteUser(deleteConfirmUser._id)}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
-                Delete User
+                Xóa người dùng
               </button>
             </div>
           </div>

@@ -73,5 +73,23 @@ export const userService = {
       },
     });
     return response.data;
+  },
+
+  // Update current user profile
+  updateProfile: async (profileData) => {
+    const response = await api.put('/users/profile', profileData);
+    return response.data;
+  },
+
+  // Change password for current user
+  changePassword: async (passwordData) => {
+    const response = await api.put('/users/change-password', passwordData);
+    return response.data;
+  },
+
+  // Remove avatar for current user
+  removeAvatar: async () => {
+    const response = await api.delete('/users/remove-avatar');
+    return response.data;
   }
 }; 

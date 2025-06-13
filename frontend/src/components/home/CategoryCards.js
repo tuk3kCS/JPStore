@@ -4,25 +4,25 @@ import { Link } from 'react-router-dom';
 const CategoryCards = () => {
   const categories = [
     {
-      title: 'Figures',
-      description: 'Premium collectible figures',
-      image: 'https://images.unsplash.com/photo-1578662996442-48f60103fc96?w=400&h=300&fit=crop',
+      title: 'Mô hình',
+      description: 'Mô hình cao cấp',
+      image: '/images/figure.jpg',
       link: '/figures',
-      action: 'Explore'
+      action: 'Khám phá'
     },
     {
-      title: 'Merchandise & Goods',
-      description: 'Exclusive merchandise',
-      image: 'https://images.unsplash.com/photo-1556742393-d75f468bfcb0?w=400&h=300&fit=crop',
+      title: 'Vật phẩm & Phụ kiện',
+      description: 'Vật phẩm độc quyền',
+      image: '/images/goods.jpeg',
       link: '/merchandise',
-      action: 'Explore'
+      action: 'Khám phá'
     },
     {
-      title: 'Pre-Order',
-      description: 'Coming soon releases',
-      image: 'https://images.unsplash.com/photo-1566694271453-390536dd1f0d?w=400&h=300&fit=crop',
+      title: 'Hàng đặt trước',
+      description: 'Sản phẩm sắp ra mắt',
+      image: '/images/pre-order.webp',
       link: '/pre-order',
-      action: 'Explore'
+      action: 'Khám phá'
     }
   ];
 

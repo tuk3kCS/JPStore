@@ -1,1 +1,67 @@
-".env" 
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Build directories
+build/
+dist/
+*/build/
+*/dist/
+
+# IDE/Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Temporary folders
+tmp/
+temp/
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Production build
+frontend/build/
+backend/dist/
+
+# Uploads (user uploaded content - backend only)
+uploads/
+backend/public/images/product/*
+backend/public/images/user/*
+!backend/public/images/product/.gitkeep
+!backend/public/images/user/.gitkeep
+
+# Project context and description
+Project_Context.txt
+Project_Description.md

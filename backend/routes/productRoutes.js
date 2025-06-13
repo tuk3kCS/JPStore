@@ -14,11 +14,11 @@ router.post('/upload-images', auth, uploadProductImages.array('images', 10), asy
     try {
         // Check if user is admin
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+            return res.status(403).json({ message: 'Quyền truy cập bị từ chối. Quyền quản trị viên được yêu cầu.' });
         }
 
         if (!req.files || req.files.length === 0) {
-            return res.status(400).json({ message: 'No files uploaded' });
+            return res.status(400).json({ message: 'Không có file nào được tải lên' });
         }
 
         // Check minimum number of images (at least 5)
@@ -30,14 +30,14 @@ router.post('/upload-images', auth, uploadProductImages.array('images', 10), asy
                     fs.unlinkSync(filePath);
                 }
             });
-            return res.status(400).json({ message: 'At least 5 images are required' });
+            return res.status(400).json({ message: 'Ít nhất 5 ảnh là bắt buộc' });
         }
 
         // Construct image URLs
         const imageUrls = req.files.map(file => `/images/product/${file.filename}`);
 
         res.json({
-            message: 'Product images uploaded successfully',
+            message: 'Ảnh sản phẩm đã được tải lên thành công',
             images: imageUrls
         });
     } catch (error) {
@@ -50,7 +50,7 @@ router.post('/upload-images', auth, uploadProductImages.array('images', 10), asy
                 }
             });
         }
-        res.status(500).json({ message: 'Error uploading product images', error: error.message });
+        res.status(500).json({ message: 'Lỗi tải lên ảnh sản phẩm', error: error.message });
     }
 });
 
@@ -64,8 +64,14 @@ router.get('/', async (req, res) => {
         const search = req.query.search;
         const minPrice = req.query.minPrice;
         const maxPrice = req.query.maxPrice;
+        const isPreOrder = req.query.isPreOrder;
 
         let query = { isActive: true };
+
+        // Filter by pre-order status if specified
+        if (isPreOrder !== undefined) {
+            query.isPreOrder = isPreOrder === 'true';
+        }
 
         // Apply filters
         if (category) {
@@ -119,7 +125,7 @@ router.get('/', async (req, res) => {
             totalProducts: total
         });
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching products', error: error.message });
+        res.status(500).json({ message: 'Lỗi lấy danh sách sản phẩm', error: error.message });
     }
 });
 
@@ -130,11 +136,11 @@ router.get('/:id', async (req, res) => {
             .populate('category', 'name description')
             .populate('brand', 'name description');
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
         }
         res.json(product);
     } catch (error) {
-        res.status(500).json({ message: 'Error fetching product', error: error.message });
+        res.status(500).json({ message: 'Lỗi lấy thông tin sản phẩm', error: error.message });
     }
 });
 
@@ -143,33 +149,44 @@ router.post('/', auth, async (req, res) => {
     try {
         // Check if user is admin
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+            return res.status(403).json({ message: 'Quyền truy cập bị từ chối. Quyền quản trị viên được yêu cầu.' });
         }
 
         // Check if category exists
         const category = await Category.findById(req.body.category);
         if (!category) {
-            return res.status(400).json({ message: 'Category not found' });
+            return res.status(400).json({ message: 'Danh mục không tồn tại' });
         }
 
         // Check if brand exists
         const brand = await Brand.findById(req.body.brand);
         if (!brand) {
-            return res.status(400).json({ message: 'Brand not found' });
+            return res.status(400).json({ message: 'Nhà phát hành không tồn tại' });
         }
 
-        const product = new Product({
+        // Prepare product data with proper type handling
+        const productData = {
             name: req.body.name,
             description: req.body.description,
-            vndPrice: req.body.vndPrice,
-            jpyPrice: req.body.jpyPrice,
             category: req.body.category,
             brand: req.body.brand,
             images: req.body.images,
-            stock: req.body.stock,
             isPreOrder: req.body.isPreOrder || false,
             releaseDate: req.body.releaseDate || null
-        });
+        };
+
+        // Add price and stock fields based on product type
+        if (req.body.isPreOrder) {
+            // For pre-order products, only jpyPrice is required, stock defaults to 0
+            productData.jpyPrice = req.body.jpyPrice;
+            productData.stock = 0;
+        } else {
+            // For regular products, only vndPrice is required, stock from request
+            productData.vndPrice = req.body.vndPrice;
+            productData.stock = req.body.stock || 0;
+        }
+
+        const product = new Product(productData);
 
         const savedProduct = await product.save();
         const populatedProduct = await Product.findById(savedProduct._id)
@@ -177,7 +194,7 @@ router.post('/', auth, async (req, res) => {
             .populate('brand', 'name description');
         res.status(201).json(populatedProduct);
     } catch (error) {
-        res.status(500).json({ message: 'Error creating product', error: error.message });
+        res.status(500).json({ message: 'Lỗi tạo sản phẩm', error: error.message });
     }
 });
 
@@ -186,14 +203,14 @@ router.put('/:id', auth, async (req, res) => {
     try {
         // Check if user is admin
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+            return res.status(403).json({ message: 'Quyền truy cập bị từ chối. Quyền quản trị viên được yêu cầu.' });
         }
 
         // Check if category exists if it's being updated
         if (req.body.category) {
             const category = await Category.findById(req.body.category);
             if (!category) {
-                return res.status(400).json({ message: 'Category not found' });
+                return res.status(400).json({ message: 'Danh mục không tồn tại' });
             }
         }
 
@@ -201,27 +218,35 @@ router.put('/:id', auth, async (req, res) => {
         if (req.body.brand) {
             const brand = await Brand.findById(req.body.brand);
             if (!brand) {
-                return res.status(400).json({ message: 'Brand not found' });
+                return res.status(400).json({ message: 'Nhà phát hành không tồn tại' });
             }
         }
 
         const product = await Product.findById(req.params.id);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
         }
 
-        // Update product fields
+        // Update basic product fields
         product.name = req.body.name || product.name;
         product.description = req.body.description || product.description;
-        product.vndPrice = req.body.vndPrice || product.vndPrice;
-        product.jpyPrice = req.body.jpyPrice || product.jpyPrice;
         product.category = req.body.category || product.category;
         product.brand = req.body.brand || product.brand;
         product.images = req.body.images || product.images;
-        product.stock = req.body.stock || product.stock;
         product.isActive = req.body.isActive !== undefined ? req.body.isActive : product.isActive;
         product.isPreOrder = req.body.isPreOrder !== undefined ? req.body.isPreOrder : product.isPreOrder;
         product.releaseDate = req.body.releaseDate !== undefined ? req.body.releaseDate : product.releaseDate;
+
+        // Update price and stock fields based on product type
+        if (product.isPreOrder) {
+            // For pre-order products, update jpyPrice and set stock to 0
+            if (req.body.jpyPrice !== undefined) product.jpyPrice = req.body.jpyPrice;
+            product.stock = 0;
+        } else {
+            // For regular products, update vndPrice and stock
+            if (req.body.vndPrice !== undefined) product.vndPrice = req.body.vndPrice;
+            if (req.body.stock !== undefined) product.stock = req.body.stock;
+        }
 
         const updatedProduct = await product.save();
         const populatedProduct = await Product.findById(updatedProduct._id)
@@ -229,7 +254,7 @@ router.put('/:id', auth, async (req, res) => {
             .populate('brand', 'name description');
         res.json(populatedProduct);
     } catch (error) {
-        res.status(500).json({ message: 'Error updating product', error: error.message });
+        res.status(500).json({ message: 'Lỗi cập nhật sản phẩm', error: error.message });
     }
 });
 
@@ -238,18 +263,18 @@ router.delete('/:id', auth, async (req, res) => {
     try {
         // Check if user is admin
         if (req.user.role !== 'admin') {
-            return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+            return res.status(403).json({ message: 'Quyền truy cập bị từ chối. Quyền quản trị viên được yêu cầu.' });
         }
 
         const product = await Product.findById(req.params.id);
         if (!product) {
-            return res.status(404).json({ message: 'Product not found' });
+            return res.status(404).json({ message: 'Sản phẩm không tồn tại' });
         }
 
         await Product.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Product deleted successfully' });
+        res.json({ message: 'Sản phẩm đã được xóa thành công' });
     } catch (error) {
-        res.status(500).json({ message: 'Error deleting product', error: error.message });
+        res.status(500).json({ message: 'Lỗi xóa sản phẩm', error: error.message });
     }
 });
 

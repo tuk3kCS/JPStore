@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import { cartService } from '../services/cartService';
 import { useAuth } from './AuthContext';
+import { exchangeRateService } from '../services/exchangeRateService';
 
 // Cart action types
 const CART_ACTIONS = {
@@ -14,18 +15,94 @@ const CART_ACTIONS = {
   SET_CART_COUNT: 'SET_CART_COUNT'
 };
 
+// Helper function to calculate item price with exchange rate
+const calculateItemPrice = async (product) => {
+  if (product.isPreOrder) {
+    // For pre-order products, calculate VND price from JPY price × exchange rate
+    if (product.jpyPrice) {
+      try {
+        const result = exchangeRateService.loadSettings();
+        if (result.success && result.settings && result.settings.rate) {
+          const exchangeRate = parseFloat(result.settings.rate);
+          if (exchangeRate > 0) {
+            return Math.round(product.jpyPrice * exchangeRate);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading exchange rate:', error);
+      }
+      
+      // If no exchange rate is available, try to fetch from API
+      try {
+        // Fetch exchange rate from the same APIs used in ProductManagementPage
+        const primaryUrl = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/jpy.json';
+        const fallbackUrl = 'https://latest.currency-api.pages.dev/v1/currencies/jpy.json';
+        
+        let response;
+        try {
+          response = await fetch(primaryUrl);
+          if (!response.ok) throw new Error('Primary API failed');
+        } catch (error) {
+          console.log('Primary exchange rate API failed, trying fallback...');
+          response = await fetch(fallbackUrl);
+          if (!response.ok) throw new Error('Fallback API also failed');
+        }
+        
+        const data = await response.json();
+        const jpyToVndRate = data.jpy?.vnd;
+        
+        if (jpyToVndRate && jpyToVndRate > 0) {
+          console.log('Using live exchange rate for cart calculation:', jpyToVndRate);
+          return Math.round(product.jpyPrice * jpyToVndRate);
+        } else {
+          throw new Error('VND rate not found in response');
+        }
+      } catch (apiError) {
+        console.error('Failed to fetch exchange rate from API for cart calculation:', apiError);
+        // If API also fails, return 0 to indicate price calculation failed
+        // This prevents showing incorrect prices
+        return 0;
+      }
+    }
+    // Fallback to stored VND price if no JPY price
+    return product.vndPrice || 0;
+  } else {
+    return product.vndPrice || product.price || 0;
+  }
+};
+
 // Initial cart state
 const initialState = {
   items: [],
   totalItems: 0,
   subtotal: 0,
-  shipping: 0,
   total: 0,
   loading: false,
   error: null
 };
 
-// Cart reducer
+// Helper function to calculate totals for items asynchronously
+const calculateCartTotals = async (items) => {
+  if (!items || items.length === 0) {
+    return { totalItems: 0, subtotal: 0, total: 0 };
+  }
+
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // Calculate prices for all items in parallel
+  const itemPrices = await Promise.all(items.map(item => calculateItemPrice(item.product)));
+  const subtotal = items.reduce((sum, item, index) => {
+    return sum + (itemPrices[index] * item.quantity);
+  }, 0);
+  
+  return {
+    totalItems,
+    subtotal,
+    total: subtotal
+  };
+};
+
+// Cart reducer (synchronous operations only)
 function cartReducer(state, action) {
   switch (action.type) {
     case CART_ACTIONS.SET_LOADING:
@@ -66,20 +143,9 @@ function cartReducer(state, action) {
         updatedItems = [...state.items, action.payload];
       }
 
-      const newTotalItems = updatedItems.reduce((total, item) => total + item.quantity, 0);
-      const newSubtotal = updatedItems.reduce((total, item) => {
-        const price = item.product.isPreOrder 
-          ? (item.product.vndPrice || 0) 
-          : (item.product.vndPrice || item.product.price || 0);
-        return total + (price * item.quantity);
-      }, 0);
-
       return {
         ...state,
         items: updatedItems,
-        totalItems: newTotalItems,
-        subtotal: newSubtotal,
-        total: newSubtotal + state.shipping,
         loading: false,
         error: null
       };
@@ -91,20 +157,9 @@ function cartReducer(state, action) {
           : item
       );
 
-      const updatedTotalItems = updatedItemsAfterUpdate.reduce((total, item) => total + item.quantity, 0);
-      const updatedSubtotal = updatedItemsAfterUpdate.reduce((total, item) => {
-        const price = item.product.isPreOrder 
-          ? (item.product.vndPrice || 0) 
-          : (item.product.vndPrice || item.product.price || 0);
-        return total + (price * item.quantity);
-      }, 0);
-
       return {
         ...state,
         items: updatedItemsAfterUpdate,
-        totalItems: updatedTotalItems,
-        subtotal: updatedSubtotal,
-        total: updatedSubtotal + state.shipping,
         loading: false,
         error: null
       };
@@ -114,28 +169,16 @@ function cartReducer(state, action) {
         item => item.product._id !== action.payload
       );
 
-      const filteredTotalItems = filteredItems.reduce((total, item) => total + item.quantity, 0);
-      const filteredSubtotal = filteredItems.reduce((total, item) => {
-        const price = item.product.isPreOrder 
-          ? (item.product.vndPrice || 0) 
-          : (item.product.vndPrice || item.product.price || 0);
-        return total + (price * item.quantity);
-      }, 0);
-
       return {
         ...state,
         items: filteredItems,
-        totalItems: filteredTotalItems,
-        subtotal: filteredSubtotal,
-        total: filteredSubtotal + state.shipping,
         loading: false,
         error: null
       };
 
     case CART_ACTIONS.CLEAR_CART:
       return {
-        ...initialState,
-        shipping: state.shipping
+        ...initialState
       };
 
     case CART_ACTIONS.SET_CART_COUNT:
@@ -163,41 +206,39 @@ export const CartProvider = ({ children }) => {
   }, [user]);
 
   // Load cart from backend or local storage
-  const loadCart = async () => {
+  const loadCart = useCallback(async () => {
     try {
       dispatch({ type: CART_ACTIONS.SET_LOADING, payload: true });
 
       if (user) {
         // User is logged in - load from backend
         const cartData = await cartService.getCart();
+        
+        // Recalculate totals on frontend to use current exchange rate
+        const items = cartData.items || [];
+        const { totalItems, subtotal, total } = await calculateCartTotals(items);
+        
         dispatch({ 
           type: CART_ACTIONS.SET_CART, 
           payload: {
-            items: cartData.items || [],
-            totalItems: cartData.totalItems || 0,
-            subtotal: cartData.subtotal || 0,
-            shipping: cartData.shipping || 0,
-            total: cartData.total || 0
+            items,
+            totalItems,
+            subtotal,
+            total
           }
         });
       } else {
         // Guest user - load from local storage
         const localCart = cartService.getLocalCart();
-        const subtotal = localCart.items.reduce((total, item) => {
-          const price = item.product.isPreOrder 
-            ? (item.product.vndPrice || 0) 
-            : (item.product.vndPrice || item.product.price || 0);
-          return total + (price * item.quantity);
-        }, 0);
+        const { totalItems, subtotal, total } = await calculateCartTotals(localCart.items);
 
         dispatch({ 
           type: CART_ACTIONS.SET_CART, 
           payload: {
             items: localCart.items,
-            totalItems: localCart.totalItems,
+            totalItems,
             subtotal,
-            shipping: 50000, // Default shipping in VND
-            total: subtotal + 50000
+            total
           }
         });
       }
@@ -205,7 +246,7 @@ export const CartProvider = ({ children }) => {
       console.error('Error loading cart:', error);
       dispatch({ type: CART_ACTIONS.SET_ERROR, payload: error.message });
     }
-  };
+  }, [user]);
 
   // Add item to cart
   const addToCart = async (product, quantity = 1) => {
@@ -223,6 +264,26 @@ export const CartProvider = ({ children }) => {
           type: CART_ACTIONS.ADD_ITEM, 
           payload: { product, quantity }
         });
+        
+        // Recalculate totals after adding item
+        const currentState = state.items.find(item => item.product._id === product._id)
+          ? state.items.map(item => 
+              item.product._id === product._id 
+                ? { ...item, quantity: item.quantity + quantity }
+                : item
+            )
+          : [...state.items, { product, quantity }];
+        
+        const { totalItems, subtotal, total } = await calculateCartTotals(currentState);
+        dispatch({
+          type: CART_ACTIONS.SET_CART,
+          payload: {
+            items: currentState,
+            totalItems,
+            subtotal,
+            total
+          }
+        });
       }
 
       return { success: true };
@@ -233,7 +294,7 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // Update item quantity
+  // Update cart item quantity
   const updateCartItem = async (productId, quantity) => {
     try {
       dispatch({ type: CART_ACTIONS.SET_LOADING, payload: true });
@@ -243,11 +304,29 @@ export const CartProvider = ({ children }) => {
         await cartService.updateCartItem(productId, quantity);
         await loadCart(); // Reload cart from backend
       } else {
-        // Guest user - update in local storage
+        // Guest user - update local storage
         cartService.updateLocalCartItem(productId, quantity);
         dispatch({ 
           type: CART_ACTIONS.UPDATE_ITEM, 
           payload: { productId, quantity }
+        });
+        
+        // Recalculate totals after updating item
+        const updatedItems = state.items.map(item =>
+          item.product._id === productId
+            ? { ...item, quantity }
+            : item
+        );
+        
+        const { totalItems, subtotal, total } = await calculateCartTotals(updatedItems);
+        dispatch({
+          type: CART_ACTIONS.SET_CART,
+          payload: {
+            items: updatedItems,
+            totalItems,
+            subtotal,
+            total
+          }
         });
       }
 
@@ -274,6 +353,19 @@ export const CartProvider = ({ children }) => {
         dispatch({ 
           type: CART_ACTIONS.REMOVE_ITEM, 
           payload: productId
+        });
+        
+        // Recalculate totals after removing item
+        const filteredItems = state.items.filter(item => item.product._id !== productId);
+        const { totalItems, subtotal, total } = await calculateCartTotals(filteredItems);
+        dispatch({
+          type: CART_ACTIONS.SET_CART,
+          payload: {
+            items: filteredItems,
+            totalItems,
+            subtotal,
+            total
+          }
         });
       }
 
@@ -323,6 +415,21 @@ export const CartProvider = ({ children }) => {
     return item ? item.quantity : 0;
   };
 
+  // Recalculate cart totals (useful when exchange rate changes)
+  const recalculateCartTotals = useCallback(async () => {
+    const { totalItems, subtotal, total } = await calculateCartTotals(state.items);
+
+    dispatch({
+      type: CART_ACTIONS.SET_CART,
+      payload: {
+        items: state.items,
+        totalItems,
+        subtotal,
+        total
+      }
+    });
+  }, [state.items]);
+
   const value = {
     // State
     cart: state,
@@ -340,6 +447,7 @@ export const CartProvider = ({ children }) => {
     removeFromCart,
     clearCart,
     loadCart,
+    recalculateCartTotals,
     
     // Utilities
     getCartItemCount,

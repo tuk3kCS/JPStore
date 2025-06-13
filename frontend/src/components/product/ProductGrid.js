@@ -77,13 +77,13 @@ const ProductGrid = ({ searchTerm, sortBy, setSortBy, filters }) => {
 
   const getSortParam = (sortBy) => {
     switch (sortBy) {
-      case 'Price: Low to High':
+      case 'Giá tăng dần':
         return 'vndPrice';
-      case 'Price: High to Low':
+      case 'Giá giảm dần':
         return '-vndPrice';
-      case 'Name: A to Z':
+      case 'Từ A đến Z':
         return 'name';
-      case 'Name: Z to A':
+      case 'Từ Z đến A':
         return '-name';
       default:
         return '-createdAt'; // Featured - newest first
@@ -93,17 +93,17 @@ const ProductGrid = ({ searchTerm, sortBy, setSortBy, filters }) => {
   const sortProducts = (products, sortBy) => {
     return [...products].sort((a, b) => {
       switch (sortBy) {
-        case 'Price: Low to High':
+        case 'Giá tăng dần':
           const priceA = a.vndPrice || a.jpyPrice || 0;
           const priceB = b.vndPrice || b.jpyPrice || 0;
           return priceA - priceB;
-        case 'Price: High to Low':
+        case 'Giá giảm dần':
           const priceA2 = a.vndPrice || a.jpyPrice || 0;
           const priceB2 = b.vndPrice || b.jpyPrice || 0;
           return priceB2 - priceA2;
-        case 'Name: A to Z':
+        case 'Từ A đến Z':
           return a.name.localeCompare(b.name);
-        case 'Name: Z to A':
+        case 'Từ Z đến A':
           return b.name.localeCompare(a.name);
         default:
           return 0; // Keep original order for Featured
@@ -149,19 +149,19 @@ const ProductGrid = ({ searchTerm, sortBy, setSortBy, filters }) => {
     return (
       <div>
         <div className="flex justify-between items-center mb-6">
-          <p className="text-gray-600">Error loading products</p>
+          <p className="text-gray-600">Lỗi khi tải sản phẩm</p>
           <div className="flex items-center space-x-2">
-            <span className="text-gray-600">Sort by:</span>
+            <span className="text-gray-600">Sắp xếp theo:</span>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="border border-gray-300 rounded px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             >
-              <option>Featured</option>
-              <option>Price: Low to High</option>
-              <option>Price: High to Low</option>
-              <option>Name: A to Z</option>
-              <option>Name: Z to A</option>
+              <option>Mới nhất</option>
+              <option>Giá tăng dần</option>
+              <option>Giá giảm dần</option>
+              <option>Từ A đến Z</option>
+              <option>Từ Z đến A</option>
             </select>
           </div>
         </div>
@@ -175,7 +175,7 @@ const ProductGrid = ({ searchTerm, sortBy, setSortBy, filters }) => {
             onClick={fetchProducts}
             className="mt-4 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
-            Try Again
+            Thử lại
           </button>
         </div>
       </div>
@@ -188,24 +188,24 @@ const ProductGrid = ({ searchTerm, sortBy, setSortBy, filters }) => {
       <div className="flex justify-between items-center mb-6">
         <p className="text-gray-600">
           {totalProducts > 0 ? (
-            <>Showing {startItem}-{endItem} of {totalProducts} products</>
+            <>Hiển thị {startItem} đến {endItem} trong tổng số {totalProducts} sản phẩm</>
           ) : (
-            'No products found'
+            'Không tìm thấy sản phẩm'
           )}
         </p>
         
         <div className="flex items-center space-x-2">
-          <span className="text-gray-600">Sort by:</span>
+          <span className="text-gray-600">Sắp xếp theo:</span>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
             className="border border-gray-300 rounded px-3 py-1 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
-            <option>Featured</option>
-            <option>Price: Low to High</option>
-            <option>Price: High to Low</option>
-            <option>Name: A to Z</option>
-            <option>Name: Z to A</option>
+            <option>Mới nhất</option>
+            <option>Giá tăng dần</option>
+            <option>Giá giảm dần</option>
+            <option>Từ A đến Z</option>
+            <option>Từ Z đến A</option>
           </select>
         </div>
       </div>
@@ -223,8 +223,8 @@ const ProductGrid = ({ searchTerm, sortBy, setSortBy, filters }) => {
           <div className="text-gray-400 mb-4">
             <i className="bi bi-box text-4xl"></i>
           </div>
-          <p className="text-gray-500 text-lg">No products found matching your criteria.</p>
-          <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or search terms.</p>
+          <p className="text-gray-500 text-lg">Không tìm thấy sản phẩm phù hợp.</p>
+          <p className="text-gray-400 text-sm mt-2">Hãy điều chỉnh bộ lọc hoặc từ khóa tìm kiếm.</p>
         </div>
       )}
 

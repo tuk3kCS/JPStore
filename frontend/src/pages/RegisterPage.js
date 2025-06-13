@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authService } from '../services/authService';
-import { setAuthToken, setUser } from '../utils/auth';
+import { useAuth } from '../context/AuthContext';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -35,25 +36,25 @@ const RegisterPage = () => {
     const newErrors = {};
 
     if (!formData.username.trim()) {
-      newErrors.username = 'Username is required';
+      newErrors.username = 'Tên người dùng là bắt buộc';
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = 'Email là bắt buộc';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = 'Email không hợp lệ';
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = 'Mật khẩu là bắt buộc';
     } else if (formData.password.length < 6) {
-      newErrors.password = 'Password must be at least 6 characters';
+      newErrors.password = 'Mật khẩu phải có ít nhất 6 ký tự';
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = 'Vui lòng xác nhận mật khẩu';
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = 'Mật khẩu không khớp';
     }
 
     return newErrors;
@@ -79,16 +80,15 @@ const RegisterPage = () => {
         password
       });
 
-      // Store auth data
-      setAuthToken(response.token);
-      setUser(response.user);
+      // Use AuthContext's login method to update React state
+      login(response.user, response.token);
 
       // Redirect to home page after successful registration
       navigate('/');
     } catch (error) {
       console.error('Registration error:', error);
       setErrors({
-        general: error.response?.data?.message || 'Registration failed. Please try again.'
+        general: error.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.'
       });
     } finally {
       setIsLoading(false);
@@ -119,7 +119,7 @@ const RegisterPage = () => {
 
         {/* Title */}
         <h2 className="text-center text-2xl font-semibold text-gray-900 mb-8">
-          Create Your Account
+          Tạo tài khoản của bạn
         </h2>
       </div>
 
@@ -146,7 +146,7 @@ const RegisterPage = () => {
                   required
                   value={formData.username}
                   onChange={handleChange}
-                  placeholder="Username"
+                  placeholder="Tên người dùng"
                   className={`block w-full pl-10 pr-3 py-3 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                     errors.username ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -194,7 +194,7 @@ const RegisterPage = () => {
                   required
                   value={formData.password}
                   onChange={handleChange}
-                  placeholder="Password"
+                  placeholder="Mật khẩu"
                   className={`block w-full pl-10 pr-3 py-3 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -218,7 +218,7 @@ const RegisterPage = () => {
                   required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  placeholder="Confirm Password"
+                  placeholder="Xác nhận mật khẩu"
                   className={`block w-full pl-10 pr-3 py-3 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 ${
                     errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -242,19 +242,19 @@ const RegisterPage = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Creating Account...
+                    Đang tạo tài khoản...
                   </>
                 ) : (
-                  'Register'
+                  'Đăng ký'
                 )}
               </button>
             </div>
 
             {/* Sign In Link */}
             <div className="text-center text-sm">
-              <span className="text-gray-600">Already have an account? </span>
+              <span className="text-gray-600">Đã có tài khoản? </span>
               <Link to="/login" className="text-blue-600 hover:text-blue-500">
-                Sign In
+                Đăng nhập
               </Link>
             </div>
           </form>

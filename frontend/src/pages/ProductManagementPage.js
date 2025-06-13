@@ -91,15 +91,18 @@ const ProductManagementPage = () => {
     loadCategories();
     loadBrands();
     loadExchangeRate();
-  }, [currentPage, debouncedSearchTerm]); // Use debouncedSearchTerm instead of searchTerm
+  }, [currentPage, debouncedSearchTerm, activeTab]); // Add activeTab to dependencies
 
   // Load exchange rate when switching to preorder tab
   useEffect(() => {
-    // Reset page when switching tabs
+    // Reset page and product counts when switching tabs
     setCurrentPage(1);
+    setTotalProducts(0);
+    setTotalPages(0);
+    setProducts([]);
     
     if (activeTab === 'preorder') {
-      loadExchangeRateSettings(); // Load saved settings first
+      loadExchangeRateSettings(); // Load saved settings first (async)
       loadExchangeRate();
     }
   }, [activeTab]);
@@ -123,6 +126,13 @@ const ProductManagementPage = () => {
       
       if (debouncedSearchTerm) {
         params.search = debouncedSearchTerm;
+      }
+
+      // Filter by product type based on active tab
+      if (activeTab === 'preorder') {
+        params.isPreOrder = 'true';
+      } else if (activeTab === 'instock') {
+        params.isPreOrder = 'false';
       }
 
       const response = await productService.getProducts(params);
@@ -217,9 +227,9 @@ const ProductManagementPage = () => {
   };
 
   // Load saved exchange rate settings
-  const loadExchangeRateSettings = () => {
+  const loadExchangeRateSettings = async () => {
     try {
-      const result = exchangeRateService.loadSettings();
+      const result = await exchangeRateService.loadSettingsAsync();
       if (result.success && result.settings) {
         setSavedSettings(result.settings);
         setUseAutoExchangeRate(result.settings.type === 'automatic');
@@ -243,7 +253,7 @@ const ProductManagementPage = () => {
         rate: customExchangeRate
       };
 
-      const result = exchangeRateService.saveSettings(settingsToSave);
+      const result = await exchangeRateService.saveSettings(settingsToSave);
       
       if (result.success) {
         setSavedSettings({
@@ -303,11 +313,11 @@ const ProductManagementPage = () => {
   // Helper function to get stock status
   const getStockStatus = (stock) => {
     if (stock === 0) {
-      return { text: 'Out of Stock', color: 'bg-red-100 text-red-800' };
+      return { text: 'Hết hàng', color: 'bg-red-100 text-red-800' };
     } else if (stock <= 5) {
-      return { text: 'Low Stock', color: 'bg-yellow-100 text-yellow-800' };
+      return { text: 'Còn ít', color: 'bg-yellow-100 text-yellow-800' };
     } else {
-      return { text: 'In Stock', color: 'bg-green-100 text-green-800' };
+      return { text: 'Còn hàng', color: 'bg-green-100 text-green-800' };
     }
   };
 
@@ -558,11 +568,30 @@ const ProductManagementPage = () => {
         // Upload images first
         const uploadResponse = await productService.uploadProductImages(selectedFiles);
         
-        // Create product with uploaded image URLs
+        // Clean and prepare product data
         const productData = {
-          ...formData,
-          images: uploadResponse.images
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          brand: formData.brand,
+          images: uploadResponse.images,
+          isActive: formData.isActive,
+          isPreOrder: formData.isPreOrder,
+          releaseDate: formData.releaseDate || null
         };
+
+        // Add price fields based on product type
+        if (formData.isPreOrder) {
+          // For pre-order products, only set jpyPrice and set stock to 0
+          productData.jpyPrice = parseInt(formData.jpyPrice) || 0;
+          productData.stock = 0; // Pre-order products have no stock
+          // Don't include vndPrice for pre-order products
+        } else {
+          // For regular products, only set vndPrice and include stock
+          productData.vndPrice = parseInt(formData.vndPrice) || 0;
+          productData.stock = parseInt(formData.stock) || 0;
+          // Don't include jpyPrice for regular products
+        }
         
         console.log('Adding new product:', productData);
         await productService.createProduct(productData);
@@ -588,10 +617,30 @@ const ProductManagementPage = () => {
           }
         }
 
+        // Clean and prepare product data for update
         const productData = {
-          ...formData,
-          images: imageUrls
+          name: formData.name,
+          description: formData.description,
+          category: formData.category,
+          brand: formData.brand,
+          images: imageUrls,
+          isActive: formData.isActive,
+          isPreOrder: formData.isPreOrder,
+          releaseDate: formData.releaseDate || null
         };
+
+        // Add price fields based on product type
+        if (formData.isPreOrder) {
+          // For pre-order products, only set jpyPrice and set stock to 0
+          productData.jpyPrice = parseInt(formData.jpyPrice) || 0;
+          productData.stock = 0; // Pre-order products have no stock
+          // Don't include vndPrice for pre-order products
+        } else {
+          // For regular products, only set vndPrice and include stock
+          productData.vndPrice = parseInt(formData.vndPrice) || 0;
+          productData.stock = parseInt(formData.stock) || 0;
+          // Don't include jpyPrice for regular products
+        }
 
         console.log('Updating product data:', productData);
         await productService.updateProduct(selectedProduct._id, productData);
@@ -752,22 +801,20 @@ const ProductManagementPage = () => {
 
   // Helper function to get filtered products for current tab
   const getFilteredProducts = () => {
-    if (activeTab === 'preorder') {
-      return products.filter(product => product.isPreOrder);
-    } else if (activeTab === 'instock') {
-      return products.filter(product => !product.isPreOrder);
-    }
+    // Products are now pre-filtered by the backend based on activeTab
     return products;
   };
 
   // Helper function to get filtered product count
   const getFilteredProductCount = () => {
-    return getFilteredProducts().length;
+    // Use total from backend since it's already filtered
+    return totalProducts;
   };
 
   // Helper function to get filtered pages count  
   const getFilteredPages = () => {
-    return Math.ceil(getFilteredProductCount() / productsPerPage);
+    // Use total pages from backend since it's already filtered
+    return totalPages;
   };
 
   return (
@@ -776,7 +823,7 @@ const ProductManagementPage = () => {
       <div className="w-64 bg-white shadow-sm border-r">
         {/* Logo */}
         <div className="px-6 py-6 border-b">
-          <div className="flex items-center">
+          <div className="flex items-center h-8">
             <img 
               src="/images/logo.png" 
               alt="JPStore Logo" 
@@ -804,7 +851,7 @@ const ProductManagementPage = () => {
                 className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
               >
                 <i className="bi bi-grid mr-3"></i>
-                Overview
+                Tổng quan
               </Link>
             </li>
             <li>
@@ -813,7 +860,7 @@ const ProductManagementPage = () => {
                 className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
               >
                 <i className="bi bi-people mr-3"></i>
-                User Management
+                Quản lý người dùng
               </Link>
             </li>
             <li>
@@ -822,7 +869,7 @@ const ProductManagementPage = () => {
                 className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors bg-blue-50 text-blue-600 border-r-2 border-blue-600"
               >
                 <i className="bi bi-box mr-3"></i>
-                Product Management
+                Quản lý sản phẩm
               </button>
             </li>
             <li>
@@ -831,18 +878,10 @@ const ProductManagementPage = () => {
                 className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
               >
                 <i className="bi bi-clipboard-data mr-3"></i>
-                Order Management
+                Quản lý đơn hàng
               </Link>
             </li>
-            <li>
-              <button
-                onClick={() => setActiveMenuItem('statistics')}
-                className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-gray-600 hover:bg-gray-50"
-              >
-                <i className="bi bi-bar-chart mr-3"></i>
-                Statistics
-              </button>
-            </li>
+
           </ul>
           
           {/* Logout Button */}
@@ -852,7 +891,7 @@ const ProductManagementPage = () => {
               className="w-full flex items-center px-4 py-3 text-left rounded-lg transition-colors text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               <i className="bi bi-box-arrow-right mr-3"></i>
-              Logout
+              Đăng xuất
             </button>
           </div>
         </nav>
@@ -861,7 +900,7 @@ const ProductManagementPage = () => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
-        <AdminHeader title="Product Management" />
+        <AdminHeader title="Quản lý sản phẩm" />
 
         {/* Dashboard Content */}
         <main className="flex-1 overflow-auto p-6">
@@ -893,7 +932,7 @@ const ProductManagementPage = () => {
                 }`}
               >
                 <i className="bi bi-box mr-2"></i>
-                In Stock Products
+                Hàng có sẵn
               </button>
               <button
                 onClick={() => setActiveTab('preorder')}
@@ -904,7 +943,7 @@ const ProductManagementPage = () => {
                 }`}
               >
                 <i className="bi bi-clock mr-2"></i>
-                Pre-Order Products
+                Hàng đặt trước
               </button>
               <button
                 onClick={() => setActiveTab('categories')}
@@ -915,7 +954,7 @@ const ProductManagementPage = () => {
                 }`}
               >
                 <i className="bi bi-grid mr-2"></i>
-                Category Management
+                Quản lý danh mục
               </button>
               <button
                 onClick={() => setActiveTab('brands')}
@@ -926,7 +965,7 @@ const ProductManagementPage = () => {
                 }`}
               >
                 <i className="bi bi-award mr-2"></i>
-                Brand Management
+                Quản lý nhà phát hành
               </button>
             </nav>
           </div>
@@ -942,7 +981,7 @@ const ProductManagementPage = () => {
                     <i className="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
                     <input
                       type="text"
-                      placeholder="Search products by name, brand, or description..."
+                      placeholder="Tìm kiếm sản phẩm theo tên, nhà phát hành, mô tả..."
                       value={searchTerm}
                       onChange={handleSearchChange}
                       className="w-80 pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -956,7 +995,7 @@ const ProductManagementPage = () => {
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <i className="bi bi-plus"></i>
-                  <span>Add New Product</span>
+                  <span>Thêm sản phẩm mới</span>
                 </button>
               </div>
 
@@ -969,12 +1008,12 @@ const ProductManagementPage = () => {
                     <div className="bg-white border border-gray-200 rounded-lg p-4">
                       <div className="flex items-center justify-between space-x-4">
                         <div>
-                          <h3 className="text-sm font-semibold text-gray-900">Exchange Rate Setting</h3>
+                          <h3 className="text-sm font-semibold text-gray-900">Thiết lập tỷ giá</h3>
                         </div>
                         
                         {/* Toggle Switch */}
                         <div className="flex items-center space-x-2">
-                          <span className="text-xs text-gray-600">Manual</span>
+                          <span className="text-xs text-gray-600">Thủ công</span>
                           <button
                             onClick={() => handleExchangeRateToggle(!useAutoExchangeRate)}
                             className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -987,7 +1026,7 @@ const ProductManagementPage = () => {
                               }`}
                             />
                           </button>
-                          <span className="text-xs text-gray-600">Auto</span>
+                          <span className="text-xs text-gray-600">Tự động</span>
                         </div>
                       </div>
                       
@@ -1025,12 +1064,12 @@ const ProductManagementPage = () => {
                           {settingsSaveStatus === 'saving' ? (
                             <>
                               <i className="bi bi-arrow-clockwise animate-spin mr-1"></i>
-                              <span>Saving</span>
+                              <span>Đang lưu</span>
                             </>
                           ) : (
                             <>
                               <i className="bi bi-floppy mr-1"></i>
-                              <span>Save</span>
+                              <span>Lưu</span>
                             </>
                           )}
                         </button>
@@ -1044,13 +1083,13 @@ const ProductManagementPage = () => {
                           {settingsSaveStatus === 'saved' && (
                             <span className="text-green-600 font-medium">
                               <i className="bi bi-check-circle-fill mr-1"></i>
-                              Saved!
+                              Đã lưu!
                             </span>
                           )}
                           {settingsSaveStatus === 'error' && (
                             <span className="text-red-600 font-medium">
                               <i className="bi bi-exclamation-circle-fill mr-1"></i>
-                              Error!
+                              Lỗi!
                             </span>
                           )}
                         </div>
@@ -1065,7 +1104,7 @@ const ProductManagementPage = () => {
                             <i className="bi bi-globe text-blue-600"></i>
                           </div>
                           <div>
-                            <h3 className="text-sm font-semibold text-gray-900">Live API Rate</h3>
+                            <h3 className="text-sm font-semibold text-gray-900">Tỉ giá hiện tại</h3>
                           </div>
                         </div>
                         
@@ -1073,7 +1112,7 @@ const ProductManagementPage = () => {
                           {exchangeRateLoading ? (
                             <div className="flex items-center space-x-2">
                               <i className="bi bi-arrow-clockwise animate-spin text-blue-600"></i>
-                              <span className="text-sm text-gray-600">Loading...</span>
+                              <span className="text-sm text-gray-600">Đang tải...</span>
                             </div>
                           ) : exchangeRateError ? (
                             <div className="text-center">
@@ -1085,7 +1124,7 @@ const ProductManagementPage = () => {
                                 onClick={loadExchangeRate}
                                 className="text-xs bg-red-100 hover:bg-red-200 px-2 py-1 rounded"
                               >
-                                Retry
+                                Thử lại
                               </button>
                             </div>
                           ) : exchangeRate ? (
@@ -1110,12 +1149,12 @@ const ProductManagementPage = () => {
                                   disabled={exchangeRateLoading}
                                 >
                                   <i className="bi bi-arrow-clockwise"></i>
-                                  <span>Refresh</span>
+                                  <span>Làm mới</span>
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div className="text-gray-500 text-sm">No rate available</div>
+                            <div className="text-gray-500 text-sm">Không có tỉ giá</div>
                           )}
                         </div>
                       </div>
@@ -1126,14 +1165,14 @@ const ProductManagementPage = () => {
                     <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">JPY Price</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">VND Price</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Release Date</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Active Status</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sản phẩm</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Danh mục</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nhà phát hành</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Giá Nhật</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Giá Việt</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày phát hành</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -1180,7 +1219,7 @@ const ProductManagementPage = () => {
                                   </span>
                                   {currentRate === 0 && (
                                     <div className="text-xs text-red-500 mt-1">
-                                      No exchange rate
+                                      Không có tỉ giá
                                     </div>
                                   )}
                                 </td>
@@ -1195,7 +1234,7 @@ const ProductManagementPage = () => {
                                     {releaseInfo.formatted}
                                   </span>
                                 ) : (
-                                  <span className="text-gray-500">Not set</span>
+                                  <span className="text-gray-500">Chưa có</span>
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -1204,7 +1243,7 @@ const ProductManagementPage = () => {
                                     ? 'bg-green-100 text-green-800' 
                                     : 'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {product.isActive ? 'Active' : 'Inactive'}
+                                  {product.isActive ? 'Hoạt động' : 'Không hoạt động'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -1216,10 +1255,10 @@ const ProductManagementPage = () => {
                                       e.stopPropagation();
                                       handleProductClick(product);
                                     }}
-                                    title="Edit Product"
+                                    title="Sửa sản phẩm"
                                   >
                                     <i className="bi bi-pencil text-xs mr-1"></i>
-                                    <span className="text-xs">Edit</span>
+                                    <span className="text-xs">Sửa</span>
                                   </button>
                                   
                                   {/* Remove Button */}
@@ -1229,10 +1268,10 @@ const ProductManagementPage = () => {
                                       e.stopPropagation();
                                       setDeleteConfirmProduct(product);
                                     }}
-                                    title="Remove Product"
+                                    title="Xóa sản phẩm"
                                   >
                                     <i className="bi bi-trash text-xs mr-1"></i>
-                                    <span className="text-xs">Remove</span>
+                                    <span className="text-xs">Xóa</span>
                                   </button>
                                 </div>
                               </td>
@@ -1252,14 +1291,14 @@ const ProductManagementPage = () => {
                     <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Release Date</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Active Status</th>
-                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sản phẩm</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Danh mục</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nhà phát hành</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Giá</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Kho</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ngày phát hành</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                          <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
@@ -1316,7 +1355,7 @@ const ProductManagementPage = () => {
                                     {releaseInfo.formatted}
                                   </span>
                                 ) : (
-                                  <span className="text-gray-500">Not set</span>
+                                  <span className="text-gray-500">Chưa có</span>
                                 )}
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -1325,7 +1364,7 @@ const ProductManagementPage = () => {
                                     ? 'bg-green-100 text-green-800' 
                                     : 'bg-gray-100 text-gray-800'
                                 }`}>
-                                  {product.isActive ? 'Active' : 'Inactive'}
+                                  {product.isActive ? 'Hoạt động' : 'Không hoạt động'}
                                 </span>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -1337,10 +1376,10 @@ const ProductManagementPage = () => {
                                       e.stopPropagation();
                                       handleProductClick(product);
                                     }}
-                                    title="Edit Product"
+                                    title="Sửa sản phẩm"
                                   >
                                     <i className="bi bi-pencil text-xs mr-1"></i>
-                                    <span className="text-xs">Edit</span>
+                                    <span className="text-xs">Sửa</span>
                                   </button>
                                   
                                   {/* Remove Button */}
@@ -1350,10 +1389,10 @@ const ProductManagementPage = () => {
                                       e.stopPropagation();
                                       setDeleteConfirmProduct(product);
                                     }}
-                                    title="Remove Product"
+                                    title="Xóa sản phẩm"
                                   >
                                     <i className="bi bi-trash text-xs mr-1"></i>
-                                    <span className="text-xs">Remove</span>
+                                    <span className="text-xs">Xóa</span>
                                   </button>
                                 </div>
                               </td>
@@ -1382,9 +1421,9 @@ const ProductManagementPage = () => {
                 <div className="mb-8">
                   <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                     <i className="bi bi-clock text-4xl text-gray-400 mb-4"></i>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No pre-order products found</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Không có sản phẩm đặt trước nào được tìm thấy</h3>
                     <p className="text-gray-500">
-                      No products are currently available for pre-order.
+                      Không có sản phẩm đặt trước nào được tìm thấy.
                     </p>
                   </div>
                 </div>
@@ -1395,9 +1434,9 @@ const ProductManagementPage = () => {
                 <div className="mb-8">
                   <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                     <i className="bi bi-box text-4xl text-gray-400 mb-4"></i>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">No in-stock products found</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Không có sản phẩm nào trong kho</h3>
                     <p className="text-gray-500">
-                      No regular products are currently in stock.
+                      Không có sản phẩm nào trong kho.
                     </p>
                   </div>
                 </div>
@@ -1407,7 +1446,18 @@ const ProductManagementPage = () => {
               {(activeTab === 'instock' || activeTab === 'preorder') && (
                 <div className="flex items-center justify-between mt-6">
                   <p className="text-gray-600 text-sm">
-                    Showing {((currentPage - 1) * productsPerPage) + 1} to {Math.min(currentPage * productsPerPage, getFilteredProductCount())} of {getFilteredProductCount()} {activeTab === 'preorder' ? 'pre-order' : 'in-stock'} products
+                    {loading ? (
+                      'Loading products...'
+                    ) : getFilteredProductCount() > 0 ? (
+                      (() => {
+                        const startItem = ((currentPage - 1) * productsPerPage) + 1;
+                        const endItem = Math.min(currentPage * productsPerPage, getFilteredProductCount());
+                        const totalCount = getFilteredProductCount();
+                        return `Hiển thị ${startItem} đến ${endItem} trong tổng số ${totalCount} sản phẩm ${activeTab === 'preorder' ? 'đặt trước' : 'trong kho'}`;
+                      })()
+                    ) : (
+                        `Không tìm thấy sản phẩm ${activeTab === 'preorder' ? 'đặt trước' : 'trong kho'}`
+                    )}
                   </p>
                   
                   <div className="flex items-center space-x-2">
@@ -1480,7 +1530,7 @@ const ProductManagementPage = () => {
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <i className="bi bi-plus"></i>
-                  <span>Add New Category</span>
+                  <span>Thêm danh mục mới</span>
                 </button>
               </div>
 
@@ -1489,10 +1539,10 @@ const ProductManagementPage = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -1512,7 +1562,7 @@ const ProductManagementPage = () => {
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {category.isActive ? 'Active' : 'Inactive'}
+                            {category.isActive ? 'Hoạt động' : 'Không hoạt động'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -1529,19 +1579,19 @@ const ProductManagementPage = () => {
                                 setShowCategoryModal(true);
                                 setError(null); // Clear any existing errors
                               }}
-                              title="Edit Category"
+                              title="Sửa danh mục"
                             >
                               <i className="bi bi-pencil text-xs mr-1"></i>
-                              <span className="text-xs">Edit</span>
+                              <span className="text-xs">Sửa</span>
                             </button>
                             
                             <button 
                               className="px-2 py-1 rounded border text-xs text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
                               onClick={() => setDeleteConfirmCategory(category)}
-                              title="Remove Category"
+                              title="Xóa danh mục"
                             >
                               <i className="bi bi-trash text-xs mr-1"></i>
-                              <span className="text-xs">Remove</span>
+                              <span className="text-xs">Xóa</span>
                             </button>
                           </div>
                         </td>
@@ -1555,8 +1605,8 @@ const ProductManagementPage = () => {
               {categories.length === 0 && (
                 <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                   <i className="bi bi-grid text-4xl text-gray-400 mb-4"></i>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No categories found</h3>
-                  <p className="text-gray-500">Create your first category to get started.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Không có danh mục nào được tìm thấy</h3>
+                  <p className="text-gray-500">Tạo danh mục đầu tiên để bắt đầu.</p>
                 </div>
               )}
             </div>
@@ -1577,7 +1627,7 @@ const ProductManagementPage = () => {
                   className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   <i className="bi bi-plus"></i>
-                  <span>Add New Brand</span>
+                  <span>Thêm nhà phát hành mới</span>
                 </button>
               </div>
 
@@ -1586,10 +1636,10 @@ const ProductManagementPage = () => {
                 <table className="w-full">
                   <thead className="bg-gray-50">
                     <tr>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tên</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Mô tả</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Trạng thái</th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Hành động</th>
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
@@ -1609,7 +1659,7 @@ const ProductManagementPage = () => {
                               ? 'bg-green-100 text-green-800' 
                               : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {brand.isActive ? 'Active' : 'Inactive'}
+                            {brand.isActive ? 'Hoạt động' : 'Không hoạt động'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
@@ -1625,19 +1675,19 @@ const ProductManagementPage = () => {
                                 });
                                 setShowBrandModal(true);
                               }}
-                              title="Edit Brand"
+                              title="Sửa nhà phát hành"
                             >
                               <i className="bi bi-pencil text-xs mr-1"></i>
-                              <span className="text-xs">Edit</span>
+                              <span className="text-xs">Sửa</span>
                             </button>
                             
                             <button 
                               className="px-2 py-1 rounded border text-xs text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
                               onClick={() => setDeleteConfirmBrand(brand)}
-                              title="Remove Brand"
+                              title="Xóa nhà phát hành"
                             >
                               <i className="bi bi-trash text-xs mr-1"></i>
-                              <span className="text-xs">Remove</span>
+                              <span className="text-xs">Xóa</span>
                             </button>
                           </div>
                         </td>
@@ -1651,8 +1701,8 @@ const ProductManagementPage = () => {
               {brands.length === 0 && (
                 <div className="bg-white rounded-lg shadow-sm p-8 text-center">
                   <i className="bi bi-award text-4xl text-gray-400 mb-4"></i>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No brands found</h3>
-                  <p className="text-gray-500">Create your first brand to get started.</p>
+                  <h3 className="text-lg font-medium text-gray-900 mb-2">Không có nhà phát hành nào được tìm thấy</h3>
+                  <p className="text-gray-500">Tạo nhà phát hành đầu tiên để bắt đầu.</p>
                 </div>
               )}
             </div>
@@ -1666,7 +1716,7 @@ const ProductManagementPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {isAddMode ? 'Add New Product' : 'Edit Product'}
+                {isAddMode ? 'Thêm sản phẩm mới' : 'Sửa sản phẩm'}
               </h2>
               <button
                 onClick={handleModalClose}
@@ -1680,7 +1730,7 @@ const ProductManagementPage = () => {
               {/* Product Images Section */}
               <div className="mb-6">
                 <label className="block text-sm font-medium text-gray-700 mb-3 text-left">
-                  Product Images {isAddMode && <span className="text-red-500">* (minimum 5, maximum 10 images)</span>}
+                  Hình ảnh sản phẩm {isAddMode && <span className="text-red-500">* (tối thiểu 5, tối đa 10 hình ảnh)</span>}
                 </label>
                 
                 {/* Upload Error */}
@@ -1720,10 +1770,10 @@ const ProductManagementPage = () => {
                         : 'text-gray-900'
                     }`}>
                       {selectedFiles.length >= 10 
-                        ? 'Maximum 10 images reached' 
+                        ? 'Đạt tối đa 10 hình ảnh' 
                         : dragOver 
-                        ? 'Drop images here' 
-                        : 'Drag & drop images here'
+                        ? 'Thả hình ảnh vào đây' 
+                        : 'Kéo và thả hình ảnh vào đây'
                       }
                     </h3>
                     {selectedFiles.length < 10 && (
@@ -1732,7 +1782,7 @@ const ProductManagementPage = () => {
                           or
                         </p>
                         <label className="cursor-pointer bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                          <span>Choose Files</span>
+                          <span>Chọn tệp</span>
                           <input
                             type="file"
                             multiple
@@ -1751,7 +1801,7 @@ const ProductManagementPage = () => {
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium text-gray-700">
-                        Selected Images ({imagePreviews.length}/10)
+                        Hình ảnh đã chọn ({imagePreviews.length}/10)
                       </h4>
                     </div>
                     <div className="grid grid-cols-6 gap-3">
@@ -1770,7 +1820,7 @@ const ProductManagementPage = () => {
                           {index === 0 && (
                             <div className="absolute -top-2 -left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full z-20 shadow-md">
                               <i className="bi bi-star-fill mr-1"></i>
-                              Main
+                              Chính
                             </div>
                           )}
                           
@@ -1816,7 +1866,7 @@ const ProductManagementPage = () => {
                   <div className="mb-4">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-sm font-medium text-gray-700">
-                        Current Images ({formData.images.length}/10)
+                        Hình ảnh hiện tại ({formData.images.length}/10)
                       </h4>
                     </div>
                     <div className="grid grid-cols-6 gap-3">
@@ -1826,7 +1876,7 @@ const ProductManagementPage = () => {
                           {index === 0 && (
                             <div className="absolute -top-2 -left-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full z-20 shadow-md">
                               <i className="bi bi-star-fill mr-1"></i>
-                              Main
+                              Chính
                             </div>
                           )}
                           
@@ -1868,13 +1918,13 @@ const ProductManagementPage = () => {
                       {selectedFiles.length > 0 && (
                         <span className="text-gray-700">
                           <i className="bi bi-images mr-1"></i>
-                          Selected: <span className="font-medium">{selectedFiles.length}/10</span> images
+                          Đã chọn: <span className="font-medium">{selectedFiles.length}/10</span> hình ảnh
                         </span>
                       )}
                       {!isAddMode && formData.images.length > 0 && selectedFiles.length === 0 && (
                         <span className="text-gray-700">
                           <i className="bi bi-images mr-1"></i>
-                          Current: <span className="font-medium">{formData.images.length}/10</span> images
+                          Hiện tại: <span className="font-medium">{formData.images.length}/10</span> hình ảnh
                         </span>
                       )}
                     </div>
@@ -1883,37 +1933,37 @@ const ProductManagementPage = () => {
                       {selectedFiles.length < 5 && isAddMode && (
                         <span className="text-red-600 font-medium">
                           <i className="bi bi-exclamation-circle mr-1"></i>
-                          Need {5 - selectedFiles.length} more images
+                          Cần {5 - selectedFiles.length} hình ảnh nữa
                         </span>
                       )}
                       {!isAddMode && formData.images.length < 5 && selectedFiles.length === 0 && (
                         <span className="text-red-600 font-medium">
                           <i className="bi bi-exclamation-triangle mr-1"></i>
-                          Need {5 - formData.images.length} more images (minimum 5 required)
+                          Cần {5 - formData.images.length} hình ảnh nữa (tối thiểu 5 hình ảnh)
                         </span>
                       )}
                       {selectedFiles.length >= 5 && selectedFiles.length < 10 && (
                         <span className="text-green-600 font-medium">
                           <i className="bi bi-check-circle mr-1"></i>
-                          Requirements met • Can add {10 - selectedFiles.length} more
+                          Đáp ứng yêu cầu • Có thể thêm {10 - selectedFiles.length} hình ảnh nữa
                         </span>
                       )}
                       {!isAddMode && formData.images.length >= 5 && selectedFiles.length === 0 && (
                         <span className="text-green-600 font-medium">
                           <i className="bi bi-check-circle mr-1"></i>
-                          Requirements met • Can add {10 - formData.images.length} more
+                          Đáp ứng yêu cầu • Có thể thêm {10 - formData.images.length} hình ảnh nữa
                         </span>
                       )}
                       {selectedFiles.length >= 10 && (
                         <span className="text-blue-600 font-medium">
                           <i className="bi bi-info-circle mr-1"></i>
-                          Maximum images reached
+                          Đạt tối đa 10 hình ảnh
                         </span>
                       )}
                       {!isAddMode && formData.images.length >= 10 && selectedFiles.length === 0 && (
                         <span className="text-blue-600 font-medium">
                           <i className="bi bi-info-circle mr-1"></i>
-                          Maximum images reached
+                          Đạt tối đa 10 hình ảnh
                         </span>
                       )}
                     </div>
@@ -1925,7 +1975,7 @@ const ProductManagementPage = () => {
                 {/* Product Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                    Product Name *
+                    Tên sản phẩm *
                   </label>
                   <input
                     type="text"
@@ -1933,7 +1983,7 @@ const ProductManagementPage = () => {
                     value={formData.name}
                     onChange={handleFormChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Enter product name"
+                    placeholder="Nhập tên sản phẩm"
                     required
                   />
                 </div>
@@ -1941,7 +1991,7 @@ const ProductManagementPage = () => {
                 {/* Brand Name */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                    Brand *
+                    Nhà phát hành *
                   </label>
                   <select
                     name="brand"
@@ -1950,7 +2000,7 @@ const ProductManagementPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
-                    <option value="">Select brand</option>
+                    <option value="">Chọn nhà phát hành</option>
                     {brands.map((brand) => (
                       <option key={brand._id} value={brand._id}>
                         {brand.name}
@@ -1962,7 +2012,7 @@ const ProductManagementPage = () => {
                 {/* Category */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                    Category *
+                    Danh mục *
                   </label>
                   <select
                     name="category"
@@ -1971,7 +2021,7 @@ const ProductManagementPage = () => {
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   >
-                    <option value="">Select category</option>
+                    <option value="">Chọn danh mục</option>
                     {categories.map((category) => (
                       <option key={category._id} value={category._id}>
                         {category.name}
@@ -2016,7 +2066,7 @@ const ProductManagementPage = () => {
                 {!formData.isPreOrder && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                      Stock Quantity *
+                      Số lượng trong kho *
                     </label>
                     <input
                       type="number"
@@ -2034,7 +2084,7 @@ const ProductManagementPage = () => {
                 {/* Release Date */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                    Release Date (Month & Year)
+                    Ngày phát hành (Tháng & Năm)
                     {formData.isPreOrder && <span className="text-orange-600"> *</span>}
                   </label>
                   <input
@@ -2051,7 +2101,7 @@ const ProductManagementPage = () => {
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Description *
+                  Mô tả *
                 </label>
                 <textarea
                   name="description"
@@ -2059,7 +2109,7 @@ const ProductManagementPage = () => {
                   onChange={handleFormChange}
                   rows={4}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter product description"
+                  placeholder="Nhập mô tả sản phẩm"
                   required
                 />
               </div>
@@ -2074,7 +2124,7 @@ const ProductManagementPage = () => {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded mt-0.5"
                 />
                 <label className="ml-2 block text-sm text-gray-700 text-left">
-                  <span className="font-medium">Pre-order product</span>
+                  <span className="font-medium">Sản phẩm đặt trước</span>
                 </label>
               </div>
 
@@ -2089,7 +2139,7 @@ const ProductManagementPage = () => {
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label className="ml-2 block text-sm text-gray-700">
-                    Active (product is available for sale)
+                    Hoạt động (sản phẩm có thể bán)
                   </label>
                 </div>
               )}
@@ -2102,7 +2152,7 @@ const ProductManagementPage = () => {
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                   disabled={uploading}
                 >
-                  Cancel
+                  Hủy bỏ
                 </button>
                 <button
                   type="button"
@@ -2113,10 +2163,10 @@ const ProductManagementPage = () => {
                   {uploading ? (
                     <div className="flex items-center justify-center">
                       <i className="bi bi-arrow-clockwise animate-spin mr-2"></i>
-                      {isAddMode ? 'Creating Product...' : 'Updating Product...'}
+                      {isAddMode ? 'Đang tạo sản phẩm...' : 'Đang cập nhật sản phẩm...'}
                     </div>
                   ) : (
-                    isAddMode ? 'Add Product' : 'Save Changes'
+                    isAddMode ? 'Thêm sản phẩm' : 'Lưu thay đổi'
                   )}
                 </button>
               </div>
@@ -2131,7 +2181,7 @@ const ProductManagementPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Confirm Delete
+                Xác nhận xóa
               </h2>
               <button
                 onClick={() => setDeleteConfirmProduct(null)}
@@ -2147,20 +2197,19 @@ const ProductManagementPage = () => {
                   <i className="bi bi-exclamation-triangle text-red-600 text-xl"></i>
                 </div>
                 <div className="text-left">
-                  <h3 className="text-lg font-medium text-gray-900">Delete Product</h3>
-                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                  <h3 className="text-lg font-medium text-gray-900">Xóa sản phẩm</h3>
                 </div>
               </div>
               
               <p className="text-gray-700 mb-4 text-left">
-                Are you sure you want to delete product <strong>{deleteConfirmProduct.name}</strong>? 
-                This will permanently remove the product and all associated data.
+                Bạn có chắc chắn muốn xóa sản phẩm <strong>{deleteConfirmProduct.name}</strong>? 
+                Điều này sẽ xóa sản phẩm và tất cả dữ liệu liên quan.
               </p>
 
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <div className="flex items-center">
                   <i className="bi bi-info-circle text-red-500 mr-2 flex-shrink-0"></i>
-                  <span className="text-sm text-red-700 text-left">This action is irreversible</span>
+                  <span className="text-sm text-red-700 text-left">Điều này không thể hoàn tác</span>
                 </div>
               </div>
             </div>
@@ -2171,14 +2220,14 @@ const ProductManagementPage = () => {
                 onClick={() => setDeleteConfirmProduct(null)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
-                Cancel
+                Hủy bỏ
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteProduct(deleteConfirmProduct._id)}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
-                Delete Product
+                Xóa sản phẩm
               </button>
             </div>
           </div>
@@ -2191,7 +2240,7 @@ const ProductManagementPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {selectedCategory ? 'Edit Category' : 'Add New Category'}
+                {selectedCategory ? 'Sửa danh mục' : 'Thêm danh mục mới'}
               </h2>
               <button
                 onClick={() => {
@@ -2210,14 +2259,14 @@ const ProductManagementPage = () => {
               {/* Category Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Category Name *
+                  Tên danh mục *
                 </label>
                 <input
                   type="text"
                   value={categoryFormData.name}
                   onChange={(e) => setCategoryFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter category name"
+                  placeholder="Nhập tên danh mục"
                   required
                 />
               </div>
@@ -2225,14 +2274,14 @@ const ProductManagementPage = () => {
               {/* Category Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Description *
+                  Mô tả *
                 </label>
                 <textarea
                   value={categoryFormData.description}
                   onChange={(e) => setCategoryFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter category description"
+                  placeholder="Nhập mô tả danh mục"
                   required
                 />
               </div>
@@ -2247,7 +2296,7 @@ const ProductManagementPage = () => {
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label className="ml-2 block text-sm text-gray-700">
-                    Active (category is available for use)
+                    Hoạt động (danh mục có thể sử dụng)
                   </label>
                 </div>
               )}
@@ -2264,14 +2313,14 @@ const ProductManagementPage = () => {
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  Hủy bỏ
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveCategory}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  {selectedCategory ? 'Save Changes' : 'Add Category'}
+                  {selectedCategory ? 'Lưu thay đổi' : 'Thêm danh mục'}
                 </button>
               </div>
             </form>
@@ -2285,7 +2334,7 @@ const ProductManagementPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                {selectedBrand ? 'Edit Brand' : 'Add New Brand'}
+                {selectedBrand ? 'Sửa nhà phát hành' : 'Thêm nhà phát hành mới'}
               </h2>
               <button
                 onClick={() => {
@@ -2304,14 +2353,14 @@ const ProductManagementPage = () => {
               {/* Brand Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Brand Name *
+                  Tên nhà phát hành *
                 </label>
                 <input
                   type="text"
                   value={brandFormData.name}
                   onChange={(e) => setBrandFormData(prev => ({ ...prev, name: e.target.value }))}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter brand name"
+                  placeholder="Nhập tên nhà phát hành"
                   required
                 />
               </div>
@@ -2319,14 +2368,14 @@ const ProductManagementPage = () => {
               {/* Brand Description */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1 text-left">
-                  Description *
+                  Mô tả *
                 </label>
                 <textarea
                   value={brandFormData.description}
                   onChange={(e) => setBrandFormData(prev => ({ ...prev, description: e.target.value }))}
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter brand description"
+                  placeholder="Nhập mô tả nhà phát hành"
                   required
                 />
               </div>
@@ -2341,7 +2390,7 @@ const ProductManagementPage = () => {
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label className="ml-2 block text-sm text-gray-700">
-                    Active (brand is available for use)
+                    Hoạt động (nhà phát hành có thể sử dụng)
                   </label>
                 </div>
               )}
@@ -2358,14 +2407,14 @@ const ProductManagementPage = () => {
                   }}
                   className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
                 >
-                  Cancel
+                  Hủy bỏ
                 </button>
                 <button
                   type="button"
                   onClick={handleSaveBrand}
                   className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
-                  {selectedBrand ? 'Save Changes' : 'Add Brand'}
+                  {selectedBrand ? 'Lưu thay đổi' : 'Thêm nhà phát hành'}
                 </button>
               </div>
             </form>
@@ -2379,7 +2428,7 @@ const ProductManagementPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Confirm Delete
+                Xác nhận xóa
               </h2>
               <button
                 onClick={() => setDeleteConfirmCategory(null)}
@@ -2395,20 +2444,20 @@ const ProductManagementPage = () => {
                   <i className="bi bi-exclamation-triangle text-red-600 text-xl"></i>
                 </div>
                 <div className="text-left">
-                  <h3 className="text-lg font-medium text-gray-900">Delete Category</h3>
-                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                  <h3 className="text-lg font-medium text-gray-900">Xóa danh mục</h3>
+                  <p className="text-sm text-gray-500">Điều này không thể hoàn tác</p>
                 </div>
               </div>
               
               <p className="text-gray-700 mb-4 text-left">
-                Are you sure you want to delete category <strong>{deleteConfirmCategory.name}</strong>? 
-                This will permanently remove the category and may affect products using this category.
+                Bạn có chắc chắn muốn xóa danh mục <strong>{deleteConfirmCategory.name}</strong>? 
+                Điều này sẽ xóa danh mục và có thể ảnh hưởng đến sản phẩm sử dụng danh mục này.
               </p>
 
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <div className="flex items-center">
                   <i className="bi bi-info-circle text-red-500 mr-2 flex-shrink-0"></i>
-                  <span className="text-sm text-red-700 text-left">This action is irreversible</span>
+                  <span className="text-sm text-red-700 text-left">Điều này không thể hoàn tác</span>
                 </div>
               </div>
             </div>
@@ -2419,14 +2468,14 @@ const ProductManagementPage = () => {
                 onClick={() => setDeleteConfirmCategory(null)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
-                Cancel
+                Hủy bỏ
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteCategory(deleteConfirmCategory._id)}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
-                Delete Category
+                Xóa danh mục
               </button>
             </div>
           </div>
@@ -2439,7 +2488,7 @@ const ProductManagementPage = () => {
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-900">
-                Confirm Delete
+                Xác nhận xóa
               </h2>
               <button
                 onClick={() => setDeleteConfirmBrand(null)}
@@ -2455,20 +2504,20 @@ const ProductManagementPage = () => {
                   <i className="bi bi-exclamation-triangle text-red-600 text-xl"></i>
                 </div>
                 <div className="text-left">
-                  <h3 className="text-lg font-medium text-gray-900">Delete Brand</h3>
-                  <p className="text-sm text-gray-500">This action cannot be undone</p>
+                  <h3 className="text-lg font-medium text-gray-900">Xóa nhà phát hành</h3>
+                  <p className="text-sm text-gray-500">Điều này không thể hoàn tác</p>
                 </div>
               </div>
               
               <p className="text-gray-700 mb-4 text-left">
-                Are you sure you want to delete brand <strong>{deleteConfirmBrand.name}</strong>? 
-                This will permanently remove the brand and may affect products using this brand.
+                Bạn có chắc chắn muốn xóa nhà phát hành <strong>{deleteConfirmBrand.name}</strong>? 
+                Điều này sẽ xóa nhà phát hành và có thể ảnh hưởng đến sản phẩm sử dụng nhà phát hành này.
               </p>
 
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <div className="flex items-center">
                   <i className="bi bi-info-circle text-red-500 mr-2 flex-shrink-0"></i>
-                  <span className="text-sm text-red-700 text-left">This action is irreversible</span>
+                  <span className="text-sm text-red-700 text-left">Điều này không thể hoàn tác</span>
                 </div>
               </div>
             </div>
@@ -2479,14 +2528,14 @@ const ProductManagementPage = () => {
                 onClick={() => setDeleteConfirmBrand(null)}
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
-                Cancel
+                Hủy bỏ
               </button>
               <button
                 type="button"
                 onClick={() => handleDeleteBrand(deleteConfirmBrand._id)}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
-                Delete Brand
+                Xóa nhà phát hành
               </button>
             </div>
           </div>

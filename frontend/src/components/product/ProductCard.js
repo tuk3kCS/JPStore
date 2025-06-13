@@ -1,9 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { exchangeRateService } from '../../services/exchangeRateService';
+import { useCart } from '../../context/CartContext';
+import Toast from '../common/Toast';
 
 const ProductCard = ({ product }) => {
   const [savedExchangeRate, setSavedExchangeRate] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+  const [toastType, setToastType] = useState('success');
+  const { addToCart } = useCart();
 
   // Load saved exchange rate when component mounts
   useEffect(() => {
@@ -21,11 +28,29 @@ const ProductCard = ({ product }) => {
     loadExchangeRate();
   }, []);
 
-  const handleAddToCart = (e) => {
+  const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    // Add to cart functionality
-    console.log(`Added ${product.name} to cart`);
+    try {
+      setAddingToCart(true);
+      const result = await addToCart(product, 1);
+      
+      if (result.success) {
+        // Item added successfully (no success message)
+      } else {
+        // Show error message
+        setToastMessage(result.error || 'Không thể thêm sản phẩm vào giỏ hàng');
+        setToastType('error');
+        setShowToast(true);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      setToastMessage('Không thể thêm sản phẩm vào giỏ hàng');
+      setToastType('error');
+      setShowToast(true);
+    } finally {
+      setAddingToCart(false);
+    }
   };
 
   // Helper function to format price
@@ -53,10 +78,19 @@ const ProductCard = ({ product }) => {
     if (product.price) {
       return `${parseInt(product.price).toLocaleString('vi-VN')}đ`;
     }
-    return 'Price not available';
+    return 'Giá không có sẵn';
   };
 
   return (
+    <>
+      {/* Toast Notification */}
+      <Toast 
+        message={toastMessage}
+        type={toastType}
+        isVisible={showToast}
+        onClose={() => setShowToast(false)}
+      />
+      
     <Link to={`/product/${product._id}`} className="block">
       <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
       {/* Product Image */}
@@ -74,17 +108,17 @@ const ProductCard = ({ product }) => {
         <div className="absolute top-2 left-2 space-y-1">
           {product.isPreOrder && (
             <span className="bg-green-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-              Pre-Order
+              Đặt trước
             </span>
           )}
           {product.stock === 0 && !product.isPreOrder && (
             <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full">
-              Out of Stock
+              Hết hàng
             </span>
           )}
           {product.stock > 0 && product.stock <= 5 && !product.isPreOrder && (
             <span className="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">
-              Low Stock
+              Sắp hết hàng
             </span>
           )}
         </div>
@@ -110,29 +144,40 @@ const ProductCard = ({ product }) => {
           {product.isPreOrder ? (
             <button 
               onClick={handleAddToCart}
-              className="bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-green-700 transition-colors ml-2"
+              disabled={addingToCart}
+              className="bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-green-700 transition-colors ml-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
-              Pre-Order
+              {addingToCart ? (
+                <i className="bi bi-arrow-clockwise animate-spin"></i>
+              ) : (
+                'Đặt trước'
+              )}
             </button>
           ) : product.stock > 0 ? (
             <button 
               onClick={handleAddToCart}
-              className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-blue-700 transition-colors ml-2"
+              disabled={addingToCart}
+              className="bg-blue-600 text-white px-3 py-1.5 rounded text-sm font-medium hover:bg-blue-700 transition-colors ml-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             >
-              Add to Cart
+              {addingToCart ? (
+                <i className="bi bi-arrow-clockwise animate-spin"></i>
+              ) : (
+                'Thêm vào giỏ'
+              )}
             </button>
           ) : (
             <button 
               disabled
               className="bg-gray-400 text-white px-3 py-1.5 rounded text-sm font-medium cursor-not-allowed ml-2"
             >
-              Out of Stock
+              Hết hàng
             </button>
           )}
         </div>
       </div>
       </div>
     </Link>
+    </>
   );
 };
 

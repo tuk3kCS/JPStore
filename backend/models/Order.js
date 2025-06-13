@@ -17,7 +17,8 @@ const orderItemSchema = new mongoose.Schema({
     price: {
         type: Number,
         required: true
-    }
+    },
+    images: [String]
 });
 
 const orderSchema = new mongoose.Schema({
@@ -26,45 +27,49 @@ const orderSchema = new mongoose.Schema({
         ref: 'User',
         required: true
     },
+    orderCode: {
+        type: Number,
+        required: true,
+        unique: true
+    },
     items: [orderItemSchema],
     total: {
         type: Number,
         required: true
     },
-    shippingAddress: {
-        street: String,
-        ward: String,
-        district: String,
-        city: String
+    customerInfo: {
+        fullName: {
+            type: String,
+            required: true
+        },
+        email: {
+            type: String,
+            required: true
+        },
+        phone: {
+            type: String,
+            required: true
+        },
+        address: {
+            type: String,
+            required: true
+        }
     },
     paymentMethod: {
         type: String,
         required: true,
-        default: 'PAYOS'
+        default: 'payos'
     },
-    paymentDetails: {
-        orderCode: String,
-        paymentLinkId: String,
-        checkoutUrl: String,
-        qrCode: String,
-        status: {
-            type: String,
-            enum: ['PENDING', 'PAID', 'CANCELLED'],
-            default: 'PENDING'
-        }
-    },
-    paymentStatus: {
+    // PayOS payment details
+    paymentLinkId: String,
+    status: {
         type: String,
         required: true,
-        enum: ['PENDING', 'PAID', 'FAILED'],
-        default: 'PENDING'
+        enum: ['confirmed', 'processing', 'delivering', 'delivered', 'cancelled'],
+        default: 'confirmed'
     },
-    orderStatus: {
-        type: String,
-        required: true,
-        enum: ['PENDING', 'PROCESSING', 'DELIVERING', 'CANCELLED'],
-        default: 'PENDING'
-    },
+    paidAt: Date,
+    notes: String,
     createdAt: {
         type: Date,
         default: Date.now
@@ -79,8 +84,7 @@ const orderSchema = new mongoose.Schema({
 
 // Add indexes for better query performance
 orderSchema.index({ user: 1, createdAt: -1 });
-orderSchema.index({ orderStatus: 1 });
-orderSchema.index({ paymentStatus: 1 });
+orderSchema.index({ status: 1 });
 
 // Virtual for order age in days
 orderSchema.virtual('ageInDays').get(function() {

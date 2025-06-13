@@ -25,27 +25,27 @@ const Footer = () => {
               </span>
             </div>
             <p className="text-gray-400 mb-4 max-w-md text-left">
-              Your premier destination for collectible figures and exclusive merchandise.
+              Điểm đến hàng đầu cho các mô hình sưu tập và vật phẩm độc quyền.
             </p>
           </div>
           
           <div className="text-left">
-            <h4 className="font-semibold mb-4 text-left">Quick Links</h4>
+            <h4 className="font-semibold mb-4 text-left">Liên kết nhanh</h4>
             <ul className="space-y-2 text-left">
-              <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors">About Us</Link></li>
-              <li><Link to="/contact" className="text-gray-400 hover:text-white transition-colors">Contact</Link></li>
-              <li><Link to="/shipping" className="text-gray-400 hover:text-white transition-colors">Shipping Info</Link></li>
-              <li><Link to="/returns" className="text-gray-400 hover:text-white transition-colors">Returns</Link></li>
+              <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors">Về chúng tôi</Link></li>
+              <li><Link to="/contact" className="text-gray-400 hover:text-white transition-colors">Liên hệ</Link></li>
+              <li><Link to="/shipping" className="text-gray-400 hover:text-white transition-colors">Thông tin vận chuyển</Link></li>
+              <li><Link to="/returns" className="text-gray-400 hover:text-white transition-colors">Đổi trả</Link></li>
             </ul>
           </div>
           
           <div className="text-left">
-            <h4 className="font-semibold mb-4 text-left">Customer Service</h4>
+            <h4 className="font-semibold mb-4 text-left">Dịch vụ khách hàng</h4>
             <ul className="space-y-2 text-left">
-              <li><Link to="/faq" className="text-gray-400 hover:text-white transition-colors">FAQ</Link></li>
-              <li><Link to="/size-guide" className="text-gray-400 hover:text-white transition-colors">Size Guide</Link></li>
-              <li><Link to="/track-order" className="text-gray-400 hover:text-white transition-colors">Track Order</Link></li>
-              <li><Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</Link></li>
+              <li><Link to="/faq" className="text-gray-400 hover:text-white transition-colors">Câu hỏi thường gặp</Link></li>
+              <li><Link to="/size-guide" className="text-gray-400 hover:text-white transition-colors">Hướng dẫn kích thước</Link></li>
+              <li><Link to="/track-order" className="text-gray-400 hover:text-white transition-colors">Theo dõi đơn hàng</Link></li>
+              <li><Link to="/privacy" className="text-gray-400 hover:text-white transition-colors">Chính sách bảo mật</Link></li>
             </ul>
           </div>
         </div>
@@ -53,7 +53,7 @@ const Footer = () => {
         <div className="border-t border-gray-800 mt-8 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-start">
             <p className="text-gray-400 text-sm text-left">
-              © 2024 JPStore. All rights reserved.
+              © 2024 JPStore. Mọi quyền được bảo lưu.
             </p>
             <div className="flex space-x-4 mt-4 md:mt-0">
               <a href="#" className="text-gray-400 hover:text-white transition-colors">

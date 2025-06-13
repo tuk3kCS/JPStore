@@ -34,7 +34,7 @@ class CartService {
   // Add item to cart
   async addToCart(productId, quantity = 1) {
     try {
-      const response = await cartAPI.post('/add', {
+      const response = await cartAPI.post('/items', {
         productId,
         quantity
       });
@@ -48,8 +48,7 @@ class CartService {
   // Update item quantity in cart
   async updateCartItem(productId, quantity) {
     try {
-      const response = await cartAPI.put('/update', {
-        productId,
+      const response = await cartAPI.put(`/items/${productId}`, {
         quantity
       });
       return response.data;
@@ -62,7 +61,7 @@ class CartService {
   // Remove item from cart
   async removeFromCart(productId) {
     try {
-      const response = await cartAPI.delete(`/remove/${productId}`);
+      const response = await cartAPI.delete(`/items/${productId}`);
       return response.data;
     } catch (error) {
       console.error('Error removing from cart:', error);
@@ -73,7 +72,7 @@ class CartService {
   // Clear entire cart
   async clearCart() {
     try {
-      const response = await cartAPI.delete('/clear');
+      const response = await cartAPI.delete('/');
       return response.data;
     } catch (error) {
       console.error('Error clearing cart:', error);

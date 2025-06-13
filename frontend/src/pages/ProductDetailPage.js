@@ -98,7 +98,7 @@ const ProductDetailPage = () => {
         <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Product Gallery */}
-            <ProductGallery images={product.images} productName={product.name} />
+            <ProductGallery images={product.images} productName={product.name} product={product} />
             
             {/* Product Info */}
             <ProductInfo product={product} />

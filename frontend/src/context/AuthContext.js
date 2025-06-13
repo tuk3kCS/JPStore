@@ -59,27 +59,33 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log('AuthContext: Initializing authentication...');
       const token = getAuthToken();
       const localUser = getUser();
+      console.log('AuthContext: Found in localStorage - token:', !!token, 'user:', !!localUser);
       
       if (token && localUser) {
         // Try to refresh user data from server to get latest info including avatar
         try {
+          console.log('AuthContext: Refreshing user data from server...');
           const updatedUser = await userService.getCurrentUser();
           setUser(updatedUser);
+          console.log('AuthContext: Successfully refreshed user data');
           dispatch({
             type: 'LOGIN',
             payload: { user: updatedUser, token },
           });
         } catch (error) {
-          console.error('Error refreshing user data:', error);
+          console.error('AuthContext: Error refreshing user data:', error);
           // Fall back to localStorage data if server request fails
+          console.log('AuthContext: Falling back to localStorage data');
           dispatch({
             type: 'LOGIN',
             payload: { user: localUser, token },
           });
         }
       } else {
+        console.log('AuthContext: No authentication data found, setting loading to false');
         dispatch({ type: 'SET_LOADING', payload: false });
       }
     };
@@ -88,6 +94,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (user, token) => {
+    console.log('AuthContext: Login called with user:', !!user, 'token:', !!token);
     setUser(user);
     setAuthToken(token);
     dispatch({
@@ -97,6 +104,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
+    console.log('AuthContext: Logout called');
     setUser(null);
     setAuthToken(null);
     dispatch({ type: 'LOGOUT' });

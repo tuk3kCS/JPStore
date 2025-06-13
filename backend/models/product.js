@@ -40,7 +40,9 @@ const productSchema = new mongoose.Schema({
     }],
     stock: {
         type: Number,
-        required: [true, 'Product stock is required'],
+        required: function() {
+            return !this.isPreOrder;
+        },
         min: [0, 'Stock cannot be negative'],
         default: 0
     },

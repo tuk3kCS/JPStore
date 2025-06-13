@@ -1,7 +1,26 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { exchangeRateService } from '../../services/exchangeRateService';
 
 const CartItem = ({ item, onUpdateQuantity, onRemove, loading }) => {
+  const [exchangeRate, setExchangeRate] = useState(null);
+
+  // Load exchange rate when component mounts
+  useEffect(() => {
+    const loadExchangeRate = () => {
+      try {
+        const result = exchangeRateService.loadSettings();
+        if (result.success && result.settings && result.settings.rate) {
+          setExchangeRate(parseFloat(result.settings.rate));
+        }
+      } catch (error) {
+        console.error('Error loading exchange rate:', error);
+      }
+    };
+
+    loadExchangeRate();
+  }, []);
+
   const handleQuantityChange = (change) => {
     const newQuantity = item.quantity + change;
     if (newQuantity >= 1) {
@@ -19,6 +38,11 @@ const CartItem = ({ item, onUpdateQuantity, onRemove, loading }) => {
   // Calculate price based on product type
   const getPrice = () => {
     if (item.product.isPreOrder) {
+      // For pre-order products, calculate VND price from JPY price × exchange rate
+      if (item.product.jpyPrice && exchangeRate && exchangeRate > 0) {
+        return Math.round(item.product.jpyPrice * exchangeRate);
+      }
+      // Fallback to stored VND price or 0
       return item.product.vndPrice || 0;
     } else {
       return item.product.vndPrice || item.product.price || 0;
@@ -62,9 +86,6 @@ const CartItem = ({ item, onUpdateQuantity, onRemove, loading }) => {
           >
             {item.product.name}
           </Link>
-          <div className="text-sm text-gray-500 text-left">
-            {item.product.brand?.name || 'Unknown Brand'}
-          </div>
           {item.product.isPreOrder && (
             <div className="text-xs text-blue-600 text-left mt-1">
               <i className="bi bi-clock mr-1"></i>
@@ -79,11 +100,6 @@ const CartItem = ({ item, onUpdateQuantity, onRemove, loading }) => {
         <span className="text-blue-600 font-semibold">
           {formatPrice(itemPrice)}
         </span>
-        {item.product.isPreOrder && item.product.jpyPrice && (
-          <div className="text-xs text-gray-500">
-            ¥{parseInt(item.product.jpyPrice).toLocaleString('ja-JP')}
-          </div>
-        )}
       </div>
 
       {/* Quantity */}

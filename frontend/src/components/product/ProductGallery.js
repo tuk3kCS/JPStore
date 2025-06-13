@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const ProductGallery = ({ images, productName }) => {
+const ProductGallery = ({ images, productName, product }) => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [currentThumbnailPage, setCurrentThumbnailPage] = useState(0);
 
@@ -44,10 +44,23 @@ const ProductGallery = ({ images, productName }) => {
     setSelectedImage(globalIndex);
   };
 
+  // Helper function to format release date as MM/YYYY
+  const formatReleaseDate = (releaseDate) => {
+    if (!releaseDate) return null;
+    
+    const date = new Date(releaseDate);
+    if (isNaN(date.getTime())) return null;
+    
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    
+    return `${month}/${year}`;
+  };
+
   return (
     <div className="space-y-4">
       {/* Main Image */}
-      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+      <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden relative">
         <img
           src={getImageUrl(displayImages[selectedImage])}
           alt={productName}
@@ -56,6 +69,16 @@ const ProductGallery = ({ images, productName }) => {
             e.target.src = 'https://via.placeholder.com/500x500?text=Image+Not+Found';
           }}
         />
+        
+        {/* Release Date Overlay for Pre-order Products */}
+        {product?.isPreOrder && product?.releaseDate && (
+          <div className="absolute top-4 left-4">
+            <div className="bg-green-600 text-white px-3 py-2 rounded-lg shadow-lg">
+              <div className="text-xs font-medium uppercase tracking-wide mb-1">Ngày phát hành</div>
+              <div className="text-lg font-bold">{formatReleaseDate(product.releaseDate)}</div>
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Thumbnail Images with Navigation */}
