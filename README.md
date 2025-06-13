@@ -3,7 +3,7 @@
 Dự án này là đồ án học phần Thực tập cơ sở (INT13147_CLC) thuộc kì 20242, ngành CNTT (CLC), PTIT, hướng dẫn bởi thầy TS. Đào Ngọc Phong về Xây dựng website bán hàng văn hóa phẩm Nhật Bản bằng JavaScript và MongoDB.
 
 ## Techstack
-================================================================================
+
 - Frontend: React.js, TailwindCSS
 - Backend: Node.js với framework Express.js, MongoDB
 - Thiết kế UI/UX: Figma, Motiff
