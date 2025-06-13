@@ -70,7 +70,6 @@ Dự án này được thực hiện với sự hỗ trợ của các công cụ
 - Tạo file biến môi trường .env với các tham số sau
     ```bash
     REACT_APP_API_URL=http://localhost:5000/api
-    REACT_APP_UPLOAD_URL=http://localhost:5000/uploads
     ```
 
 - Khởi chạy máy chủ frontend development
