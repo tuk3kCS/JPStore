@@ -42,16 +42,11 @@ Dự án này được thực hiện với sự hỗ trợ của các công cụ
     MONGODB_URI=mongodb://localhost:27017/jpstore
     JWT_SECRET=khoa-bi-mat-jwt-cua-ban
     PORT=5000
-    ADMIN_SECRET_KEY=khoa-bi-mat-admin-cua-ban
-    NODE_ENV=development
 
     PAYOS_API_URL=https://api-merchant.payos.vn
     PAYOS_CLIENT_ID=client-id-payos-cua-ban
     PAYOS_API_KEY=api-key-payos-cua-ban
     PAYOS_CHECKSUM_KEY=checksum-key-payos-cua-ban
-
-    NEXT_PUBLIC_API_URL=http://localhost:5000/api
-    FRONTEND_URL=http://localhost:3000
     ```
 
 - Khởi chạy máy chủ backend
